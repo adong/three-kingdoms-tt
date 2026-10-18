@@ -4,6 +4,6 @@ window.TK_TITLE = {
   NAME: 'Three Kingdoms TT',     // working title
   LINE1: 'THREE KINGDOMS',       // the logo's two lines
   LINE2: 'TT',
-  SEAL: '三国',                   // the little red seal stamped on the logo (decoration, both languages)
+  SEAL: '三国',                   // the little red seal stamped on the logo in 中文 (English mode shows TT instead)
   TAG: "Teddy & Tommy's storybook adventure in old China",
 };

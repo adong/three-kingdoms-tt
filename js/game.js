@@ -13,10 +13,13 @@
   const PI = Math.PI;
   const tr = (s) => (Kit.lang ? Kit.lang.t(s) : s);
 
-  document.title = TITLE.NAME;
+  document.title = `${TITLE.NAME} · Teddy & Tommy`;
   $('logo1').textContent = TITLE.LINE1;
   $('logo2').textContent = TITLE.LINE2;
-  $('seal').textContent = TITLE.SEAL;
+  // The seal says 三国 in 中文 and TT in English: English mode shows no Chinese at all (Alan's rule).
+  const sealText = () => (Kit.lang && Kit.lang.is('zh') ? TITLE.SEAL : 'TT');
+  $('seal').textContent = sealText();
+  if (Kit.lang) Kit.lang.onChange(() => { $('seal').textContent = sealText(); });
   $('tagline').textContent = TITLE.TAG;
 
   // ---------------------------------------------------------------- saved progress
