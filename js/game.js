@@ -224,13 +224,18 @@
     const hop = (hints && hints.hop) || 0;
     // riding: the horse under him, galloping with his speed
     const riding = f.kind !== 'enemy' && (f.horse || (f.kind === 'buddy' && f.state === 'bEnter')) && f.state !== 'celebrate';
-    const lift = riding ? 0.5 * v.scale : 0;
+    // the horse stomp: it rears up on its back legs, then comes down hard
+    const st = f.st || 0;
+    const rear = riding && f.state === 'special' && f.special === 'rear' ? (st < 0.42 ? Math.sin(Math.min(1, st / 0.3) * PI / 2) * 0.7 : Math.max(0, 0.7 * (1 - (st - 0.42) / 0.08))) : 0;
+    const lift = riding ? 0.5 * v.scale + rear * 0.55 * v.scale : 0;
     p.root.position.set(f.x, f.y + hop + lift, f.z);
     if (v.horse) {
       v.horse.visible = riding;
       if (riding) {
-        v.horse.position.set(f.x, f.y, f.z);
+        v.horse.position.set(f.x, f.y + rear * 0.35 * v.scale, f.z);
+        v.horse.rotation.order = 'YXZ';
         v.horse.rotation.y = v.angle;
+        v.horse.rotation.x = rear;
         const sp = Math.hypot(f.vx || 0, f.vz || 0);
         v.gallop = (v.gallop || 0) + dt * (4 + sp * 2.2);
         M.animHorse(v.horse, v.gallop, sp);
@@ -699,7 +704,8 @@
         case 'dash': Fx.dust(e.x, e.z, 4); sfx('dash'); break;
         case 'special':
           sfx('specialUp');
-          toast(e.name, 'save', e.kind === 'rescue' ? '💫' : R.HEROES[e.who].specialIcon);
+          toast(e.name, 'save', e.kind === 'rescue' ? '💫' : e.kind === 'rear' ? '🐎' : R.HEROES[e.who].specialIcon);
+          if (e.kind === 'rear') sfx('neigh');
           break;
         case 'dunk': {
           const h = heroOf(e.who);
@@ -737,6 +743,13 @@
         case 'volley': Fx.pow(e.x + 0.6, 2.4, e.z, 'THWIP!', false); sfx('darts'); break;
         case 'crescent': Fx.pow(e.x + 0.8, 2.6, e.z, 'SHING!', true); sfx('shing'); break;
         case 'rescueSpin': Fx.ring(e.x, e.z, e.max, R.SPECIALS.rescue.speed, 'rescue', 1.6); sfx('fwoosh'); break;
+        case 'rearStomp':
+          Fx.ring(e.x, e.z, e.max, R.SPECIALS.rear.speed, 'stomp', 1.6);
+          Fx.dust(e.x, e.z, 14, true);
+          Fx.pow(e.x, 1.2, e.z, 'NEIGH!', true);
+          sfx('stomp');
+          shake = Math.max(shake, 0.9);
+          break;
         case 'hello':
           Fx.ring(e.x, e.z, R.BUDDY.helloRadius, 9, 'hello', 1.6);
           Fx.pow(e.x, 2.6, e.z, 'HI!', false);
@@ -806,7 +819,10 @@
           popBud();
           break;
         case 'buddyHop': addRunaway(e.x, e.z, -1, true); break;
-        case 'buddyMount': toast(`${heroName(e.who)} RIDES TOO!`, 'save', '🐎'); sfx('neigh'); break;
+        case 'buddyMount':
+          if (clock > (rideToastT || 0)) { rideToastT = clock + 4; toast(`${heroName(e.who)} RIDES TOO!`, 'save', '🐎'); }
+          sfx('neigh');
+          break;
         case 'buddyAgain': popBud(); sfx('click'); break;
         case 'treat': {
           const h = W.heroes[0];
@@ -879,7 +895,7 @@
     }
     W.events.length = 0;
   }
-  let savedToastT = 0;
+  let savedToastT = 0, rideToastT = 0;
 
   function popBud() {
     const b = $('budCard');

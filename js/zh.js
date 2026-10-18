@@ -35,7 +35,7 @@
   };
   const MAGIC = {
     'DRAGON DUNK!': '神龙灌篮！', 'FEATHER-FAN GALE!': '羽扇狂风！', 'THUNDER ROAR!': '雷霆怒吼！', 'FIRE SWIRL!': '火焰旋风！',
-    'REPEATING CROSSBOW!': '诸葛连弩！', 'GREEN DRAGON WAVE!': '青龙偃月波！', 'RESCUE SPIN!': '救命旋风！',
+    'REPEATING CROSSBOW!': '诸葛连弩！', 'GREEN DRAGON WAVE!': '青龙偃月波！', 'RESCUE SPIN!': '救命旋风！', 'HORSE STOMP!': '战马踏地！',
   };
   const FOOD = {
     'BAO BUN': '包子', DRUMSTICK: '鸡腿', 'LONGEVITY PEACH': '寿桃', 'ICE CREAM': '冰淇淋', WATER: '水',
@@ -84,7 +84,7 @@
     'SAVED!': '救啦！', 'POOF!': '噗！', 'BEEP!': '哔！', 'BOINK!': '啵嘤！', 'POKE!': '戳！', 'SWISH!': '唰！', 'FWIP!': '嗖！',
     'CLANG!': '当！', 'WHIRL!': '转转转！', 'CLIP-CLOP!': '嘚嘚！', 'ZAP!': '噼啪！', 'FWOOSH!': '呼啦！', 'THWIP!': '嗖嗖！',
     'SHING!': '锵！', 'WHOA!': '哇啊！', 'CRACK!': '咔嚓！', 'PERFECT!': '完美！', 'LEVEL UP!': '升级！',
-    'BUMP!': '颠一下！', 'GOTCHA!': '抓到啦！',
+    'BUMP!': '颠一下！', 'GOTCHA!': '抓到啦！', 'NEIGH!': '咴——！',
   };
   [STAGE, BOSS, BOSS_LINE, HERO, MAGIC, FOOD, STORY, TIP, BURST].forEach((d) => L.add(d));
 
@@ -128,7 +128,7 @@
     'MAGIC': '法术', 'JUMP': '跳', 'SWING': '挥', 'HORSE': '叫马', 'call a horse': '叫一匹马', 'HERE COMES A HORSE!': '马儿来啦！',
     // the ? panel
     'Player 1': '1 号玩家', 'Player 2': '2 号玩家', 'swing your weapon': '挥武器', 'jump (jump + swing = flying kick)': '跳（跳 + 挥 = 飞踢）',
-    'magic (uses a 🔮)': '法术（用一个 🔮）', 'rescue spin (costs a heart)': '救命旋风（用一颗心）',
+    'magic (uses a 🔮)': '法术（用一个 🔮）', 'rescue spin, or the horse stomp when riding (costs a heart)': '救命旋风，骑马时是战马踏地（用一颗心）',
     'walk into a soldier to grab him, swing to toss him': '走到士兵身上抓住他，再挥武器把他扔出去',
     'call a horse (walk to it to ride, jump to hop off)': '叫一匹马（走过去就能骑，跳一下就下马）',
     'on a horse: swing next to a soldier to scoop him up, swing again to fling him': '骑马时：贴着士兵挥武器就能把他拎起来，再挥一下把他甩出去', 'call your brother · team-up': '叫兄弟 · 合体必杀',

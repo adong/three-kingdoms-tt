@@ -235,6 +235,13 @@
         break;
       case 'special': case 'team': {
         const who = f.who;
+        if (f.state === 'special' && f.special === 'rear') {
+          // the horse rears up: hold on and cheer, then lean in for the stomp
+          if (st < 0.42) Object.assign(T, { la: 2.8, ra: 2.9, laz: -0.3, raz: 0.3, lean: 0.25, head: -0.3 });
+          else Object.assign(T, { la: 1.2, ra: 1.6, laz: 0.2, raz: -0.2, lean: -0.35, head: 0.2 });
+          k = K.fast;
+          break;
+        }
         if (f.state === 'special' && f.special === 'rescue') {
           // the rescue spin: arms out, twirling round
           Object.assign(T, { la: 1.6, ra: 1.6, laz: 0.9, raz: -0.9, twist: st * 22, ll: 0.3, rl: -0.3, rigY: 0.5 });

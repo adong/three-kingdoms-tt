@@ -323,6 +323,18 @@
       return;
     }
     if (h.buf) { inp = Object.assign({}, inp, h.buf); h.buf = null; }
+    if (h.hopWait > 0) {
+      if (inp.attack || inp.rescue) {
+        h.hopWait = 0;
+        inp = Object.assign({}, inp, { rescue: true, attack: false, jump: false });
+      } else {
+        h.hopWait -= DT;
+        if (h.hopWait <= 0) {
+          h.hopWait = 0;
+          if (h.horse && ['idle', 'walk', 'run', 'land'].includes(h.state)) dismount(W, h, true);
+        }
+      }
+    }
     h.st += DT;
     h.inv = Math.max(0, h.inv - DT);
     h.flash = Math.max(0, h.flash - DT);
@@ -397,7 +409,8 @@
     }
   }
 
-  const RESCUE_FROM = ['idle', 'walk', 'run', 'land', 'attack', 'hurt', 'grab', 'toss'];
+  // jump is there because people often press G a hair before F: then you spin in the air and drop to the ground
+  const RESCUE_FROM = ['idle', 'walk', 'run', 'land', 'attack', 'hurt', 'grab', 'toss', 'jump'];
 
   function idle(h) {
     h.state = 'idle';
@@ -411,7 +424,8 @@
     const H = W.R.HORSE;
     if (h.kind === 'hero' && inp.special) return startSpecial(W, h, false);
     if (inp.jump) {
-      if (h.horse) return dismount(W, h, true);
+      // on a horse, G waits a split second before hopping off: if F comes too, it's the horse stomp instead
+      if (h.horse) { if (!(h.hopWait > 0)) h.hopWait = W.R.HORSE.hopWait; return; }
       return startJump(W, h, inp);
     }
     if (inp.attack) {
@@ -854,10 +868,13 @@
   // Magic costs one 🔮. With none left (or attack + jump together) it's the rescue spin: a ring that knocks back
   // everyone close, for one heart (never the last one).
   function startSpecial(W, h, rescue) {
-    if (h.horse) parkHorse(W, h);
+    // on a horse the rescue move is the horse's own: it rears up and stomps, and you stay in the saddle.
+    // Magic (with a 🔮) still has you step down for a moment; the horse waits right behind you.
+    const rear = h.horse && (rescue || h.orbs < 1);
+    if (rear) { if (h.drag) fling(W, h); } else if (h.horse) parkHorse(W, h);
     let kind = h.def.special;
     if (rescue || h.orbs < 1) {
-      kind = 'rescue';
+      kind = rear ? 'rear' : 'rescue';
       h.hp = Math.max(1, h.hp - 1);
       W.stats.rescues++;
     } else {
@@ -875,14 +892,19 @@
       h.vy = 7.6;
       h.y = 0.01;
       h.vx = h.face * 1.4;
-    }
-    ev(W, 'special', { who: h.who, id: h.id, kind, x: h.x, z: h.z, name: kind === 'rescue' ? 'RESCUE SPIN!' : h.def.specialName });
+    } else h.vy = Math.min(h.vy || 0, 0); // started in the air (a jump): stop rising and drop while it happens
+    ev(W, 'special', { who: h.who, id: h.id, kind, x: h.x, z: h.z, name: kind === 'rescue' ? 'RESCUE SPIN!' : kind === 'rear' ? 'HORSE STOMP!' : h.def.specialName });
   }
 
   function specialStep(W, h) {
     const P = W.R.SPECIALS[h.special];
     const fire = !h.specDone && h.st >= P.at;
     if (fire) h.specDone = true;
+    if (h.special !== 'dunk' && h.y > 0) {
+      h.vy -= W.R.WORLD.GRAVITY * DT;
+      h.y = Math.max(0, h.y + h.vy * DT);
+      if (h.y === 0) { h.vy = 0; ev(W, 'land', { x: h.x, z: h.z }); }
+    }
     switch (h.special) {
       case 'dunk':
         if (h.y > 0 || h.vy > 0) {
@@ -941,8 +963,14 @@
           ev(W, 'rescueSpin', { who: h.who, x: h.x, z: h.z, max: P.radius });
         }
         break;
+      case 'rear':
+        if (fire) {
+          ringBlast(W, h, { x: h.x + h.face * 0.6, z: h.z, max: P.radius, speed: P.speed, dmg: P.dmg, zScale: 1.6, kind: 'rear' });
+          ev(W, 'rearStomp', { who: h.who, x: h.x + h.face * 0.6, z: h.z, max: P.radius });
+        }
+        break;
     }
-    if (h.st >= P.len) idle(h);
+    if (h.st >= P.len && h.y <= 0) idle(h);
   }
 
   // A shockwave ring that spreads out from (x, z) and knocks down the other team.
@@ -1018,6 +1046,12 @@
     };
     if (W.phase === 'celebrate') return;
     if (W.phase !== 'play' && W.phase !== 'clear') return;
+    // he does what you do: on his little white horse while you ride, on foot while you walk (he gallops in and
+    // waves goodbye however he likes)
+    if (!['bEnter', 'bye', 'leave'].includes(b.state) && h && activeHero(h) && b.horse !== !!h.horse) {
+      b.horse = !!h.horse;
+      ev(W, b.horse ? 'buddyMount' : 'buddyHop', { who: b.who, x: b.x, z: b.z });
+    }
     switch (b.state) {
       case 'bEnter': {
         // he gallops in on a little horse, then hops off
@@ -1704,7 +1738,7 @@
         s.hit.add(e.id);
         let dmg = s.dmg;
         if (s.owner && s.owner.kind === 'buddy') dmg *= W.R.BUDDY.power;
-        const word = { dunk: 'BOING!', fire: 'FWOOSH!', rescue: 'WHIRL!', hello: 'HI!' }[s.style] || 'POW!';
+        const word = { dunk: 'BOING!', fire: 'FWOOSH!', rescue: 'WHIRL!', rear: 'THUD!', hello: 'HI!' }[s.style] || 'POW!';
         damageEnemy(W, e, dmg, { knock: s.knock, dir: sign(e.x - s.x) || 1, word, big: s.knock, by: s.owner, special: s.knock && s.style !== 'rescue', stun: 0.6, stunOnly: s.stunOnly });
       }
       if (s.style !== 'hello') {

@@ -121,6 +121,7 @@
     arrows:   { len: 0.9, at: 0.3, speed: 13, dmg: 20, n: 5, width: 0.5 },                     // five foam darts fly across the screen
     crescent: { len: 0.85, at: 0.3, speed: 9, dmg: 24, width: 0.9, zHalf: 1.7 },               // a giant moon-shaped wave rolls forward
     rescue:   { len: 0.6, at: 0.14, radius: 2.5, speed: 11, dmg: 12 },                         // the spin when you're surrounded
+    rear:     { len: 0.75, at: 0.42, radius: 2.9, speed: 11, dmg: 14 },                         // the same on a horse: it rears up and stomps
   };
 
   // ---------------------------------------------------------------- the straw-hat army
@@ -224,6 +225,7 @@
     trampleSpeed: 3.2,         // faster than this, you bowl over anyone in front of you
     height: 0.82,              // how high the saddle is
     callSpeed: 8,              // a called horse gallops in from behind you at this speed
+    hopWait: 0.12,             // G on a horse waits this long before hopping off, in case F comes too (horse stomp)
   };
 
   // ---------------------------------------------------------------- the companion

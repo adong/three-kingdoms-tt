@@ -8,7 +8,7 @@ Kit.help.setup({
     ['swing your weapon', 'F', 'J'],
     ['jump (jump + swing = flying kick)', 'G', 'K'],
     ['magic (uses a 🔮)', 'H', 'L'],
-    ['rescue spin (costs a heart)', 'F + G', 'J + K'],
+    ['rescue spin, or the horse stomp when riding (costs a heart)', 'F + G', 'J + K'],
     ['dash', 'double-tap A or D', 'double-tap ← or →'],
     ['walk into a soldier to grab him, swing to toss him', 'F', 'J'],
     ['call a horse (walk to it to ride, jump to hop off)', 'R', 'O'],

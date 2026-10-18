@@ -238,6 +238,21 @@
     const spun = W.heroes[0].state === 'special' && W.heroes[0].special === 'rescue';
     step(W, {}, 50);
     ok('F, then G a moment later (mid-swing): the rescue spin, and it knocks back all around', spun && r1.every((x) => x.state !== 'idle') && W.heroes[0].orbs === 3, `spun ${spun}, ${r1.map((x) => x.state).join()}`);
+    W = fresh();
+    const r2 = [foe(W, 'straw', 1.2), foe(W, 'straw', -1.2)];
+    step(W, { jump: true }); step(W, {}, 3); step(W, { rescue: true }); step(W, {}, 4);
+    const spun2 = W.heroes[0].state === 'special' && W.heroes[0].special === 'rescue';
+    step(W, {}, 60);
+    ok('G, then F a moment later (already jumping): the rescue spin, and you land on your feet', spun2 && W.heroes[0].y === 0 && W.heroes[0].state === 'idle' && r2.every((x) => x.state !== 'idle'), `spun ${spun2}, y ${W.heroes[0].y}, ${W.heroes[0].state}, ${r2.map((x) => x.state).join()}`);
+    // on a horse, F + G is the horse's own move: it rears and stomps, and you stay in the saddle
+    W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
+    step(W, { mx: 1 }, 10);
+    const hp3 = W.heroes[0].hp;
+    const r3 = [foe(W, 'straw', 1.4), foe(W, 'straw', -1.2), foe(W, 'turban', 0.4, 1.0)];
+    step(W, { jump: true }); step(W, {}, 3); step(W, { attack: true }); step(W, {}, 3);
+    const reared = W.heroes[0].state === 'special' && W.heroes[0].special === 'rear';
+    step(W, {}, 60);
+    ok('on a horse, G then F a moment later: the horse rears and stomps, knocks back all around, you stay on (one heart)', reared && W.heroes[0].horse && r3.every((x) => x.state !== 'idle') && W.heroes[0].hp === hp3 - 1 && !W.items.some((i) => i.kind === 'horse'), `reared ${reared}, riding ${W.heroes[0].horse}, ${r3.map((x) => x.state).join()}, hp ${hp3}->${W.heroes[0].hp}`);
     W = fresh(); W.heroes[0].state = 'hurt'; W.heroes[0].st = 0; W.heroes[0].stun = 0.38;
     step(W, { rescue: true }); step(W, {}, 1);
     ok('the rescue spin works while being bonked too', W.heroes[0].state === 'special' && W.heroes[0].special === 'rescue', `state ${W.heroes[0].state}`);
@@ -290,6 +305,11 @@
     S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, W.heroes[0].z, false); W.heroes[0].face = 1;
     step(W, { mx: 1 }, 10); step(W, {}, 30);
     ok('get on a horse while he is here: he gets on his too', onFoot && W.heroes[0].horse && W.buddy && W.buddy.horse && count(W, 'buddyMount') === 1, `onFoot ${onFoot}, hero ${W.heroes[0].horse}, buddy ${W.buddy && W.buddy.horse}`);
+    // and he matches you every moment: off when you hop off, on again with a called horse
+    const sameAsYou = [];
+    step(W, { jump: true }); step(W, {}, 20); sameAsYou.push(!W.heroes[0].horse && !W.buddy.horse);
+    W.heroes[0].horseCd = 0; step(W, { horse: true }); step(W, {}, 90); sameAsYou.push(W.heroes[0].horse && W.buddy.horse);
+    ok('he rides exactly when you ride: hop off, he hops off; call a horse, he rides again', sameAsYou.every(Boolean), sameAsYou.join());
     // R calls a horse: it gallops in from behind, you're on it; then a little wait before the next call
     W = fresh();
     step(W, { horse: true }); step(W, {}, 30);

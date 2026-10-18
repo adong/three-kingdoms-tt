@@ -36,7 +36,7 @@ Each stage starts with a storybook card: the chapter's name in Chinese and Engli
 | swing your weapon (a 3-hit combo) | F | J | ⚔️ SWING |
 | jump (jump, then swing = flying kick) | G | K | ⬆️ JUMP |
 | magic (uses one 🔮) | H | L | ✨ MAGIC |
-| rescue spin (costs a heart, never the last) | hold F and press G (either order; works mid-swing or while bonked), or magic with no 🔮 left | J + K | ⚔️ + ⬆️ together, or ✨ with no 🔮 |
+| rescue spin (costs a heart, never the last) | hold F and press G (either order; works mid-swing, mid-jump or while bonked), or magic with no 🔮 left. On a horse it's the **horse stomp**: the horse rears and stomps, and you stay on | J + K | ⚔️ + ⬆️ together, or ✨ with no 🔮 |
 | dash (swing while dashing = dash attack) | double-tap A or D | double-tap ← or → | flick the joystick sideways twice |
 | grab and toss | walk into a soldier, then F F F | walk into a soldier, then J J J | walk in, then ⚔️ ⚔️ ⚔️ |
 | call a horse | R | O | 🐎 HORSE |
@@ -55,7 +55,7 @@ Each stage starts with a storybook card: the chapter's name in Chinese and Engli
 - **Treasure chests:** bonk one open for a weapon upgrade (⚔️: foam blue, then silver, then glowing gold; each level hits harder and reaches further), a 🔮, coins, a gold ingot or food.
 - **Food:** 包子 bao bun (+2 hearts), 鸡腿 drumstick (+3) and 寿桃 longevity peach (all your hearts). Beaten soldiers sometimes drop some.
 - **🔮 Magic:** start with 3 on Easy (up to 5) or 2 on Normal (up to 3). Every few soldiers you send home fills one back up.
-- **Horses:** some stages have a toy horse waiting, and you can **call one any time with R** (O for player 2, or the 🐎 button): it gallops in from behind and you hop on. One at a time, then a short wait before the next call (4 s on Easy, 10 s on Normal); the 🐎 chip and button go grey while you wait. Riding, you're faster, your swing is a big sweep from the saddle, and galloping into soldiers bowls them over (CLIP-CLOP!). Swing right next to a soldier to **scoop him up by the collar**: he dangles beside the horse kicking his legs, every bump of the gallop costs him (BUMP!), and he bowls over anyone you swing him into; swing again (or wait 3 s) to fling him. A bonk knocks you off but costs no heart; the horse trots home. Jump to hop off: the horse waits for you, and you climb back on once you've stepped away and walked back to it. If you're riding when you call your brother (or get on a horse while he's there), he rides too.
+- **Horses:** some stages have a toy horse waiting, and you can **call one any time with R** (O for player 2, or the 🐎 button): it gallops in from behind and you hop on. One at a time, then a short wait before the next call (4 s on Easy, 10 s on Normal); the 🐎 chip and button go grey while you wait. Riding, you're faster, your swing is a big sweep from the saddle, and galloping into soldiers bowls them over (CLIP-CLOP!). Swing right next to a soldier to **scoop him up by the collar**: he dangles beside the horse kicking his legs, every bump of the gallop costs him (BUMP!), and he bowls over anyone you swing him into; swing again (or wait 3 s) to fling him. A bonk knocks you off but costs no heart; the horse trots home. Jump to hop off: the horse waits for you, and you climb back on once you've stepped away and walked back to it. Your brother does what you do: while he's visiting he rides his little white horse when you ride and walks when you walk.
 - **Coins** fly into your pocket by themselves.
 
 ## Heroes
