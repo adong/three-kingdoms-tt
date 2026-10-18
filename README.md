@@ -40,6 +40,7 @@ Each stage starts with a storybook card: the chapter's name in Chinese and Engli
 | dash (swing while dashing = dash attack) | double-tap A or D | double-tap ← or → | flick the joystick sideways twice |
 | grab and toss | walk into a soldier, then F F F | walk into a soldier, then J J J | walk in, then ⚔️ ⚔️ ⚔️ |
 | call a horse | R | O | 🐎 HORSE |
+| read a magic scroll | E | U | 📜 (shows your next scroll) |
 | ride a horse · hop off | walk to it · G | walk to it · K | walk to it · ⬆️ |
 | on a horse: scoop a soldier up · fling him | swing next to him · swing again | J · J | ⚔️ · ⚔️ |
 | call your brother (1P) / team-up (2P) | T | Enter | tap his face (1P) or TEAM-UP! (2P) |
@@ -57,6 +58,15 @@ Each stage starts with a storybook card: the chapter's name in Chinese and Engli
 - **🔮 Magic:** start with 3 on Easy (up to 5) or 2 on Normal (up to 3). Every few soldiers you send home fills one back up.
 - **Horses:** some stages have a toy horse waiting, and you can **call one any time with R** (O for player 2, or the 🐎 button): it gallops in from behind and you hop on. One at a time, then a short wait before the next call (4 s on Easy, 10 s on Normal); the 🐎 chip and button go grey while you wait. Riding, you're faster, your swing is a big sweep from the saddle, and galloping into soldiers bowls them over (CLIP-CLOP!). Swing right next to a soldier to **scoop him up by the collar**: he dangles beside the horse kicking his legs, every bump of the gallop costs him (BUMP!), and he bowls over anyone you swing him into; swing again (or wait 3 s) to fling him. A bonk knocks you off but costs no heart; the horse trots home. Jump to hop off: the horse waits for you, and you climb back on once you've stepped away and walked back to it. Your brother does what you do: while he's visiting he rides his little white horse when you ride and walks when you walk.
 - **Coins** fly into your pocket by themselves.
+- **📜 Magic scrolls:** every stage hides one in a chest, and your brother brings freebies (see *Companion*). Carry up to 3 (the HUD shows which); **E** reads the next one, even on a horse, and each does something to every soldier on the screen:
+
+  | Scroll | What happens |
+  |---|---|
+  | 🐉 Dragon Scroll (神龙卷轴) | a red-and-gold dragon flies from the left edge to the right: every soldier is beaten, generals lose a quarter |
+  | ⚡ Thunder Scroll (雷霆卷轴) | three lightning strikes on every soldier; the last knocks them down |
+  | ❄️ Ice Scroll (冰冻卷轴) | everyone freezes in a block of ice for 5 s (generals 3 s), and your hits on them do double |
+  | 🌪️ Whirlwind Scroll (旋风卷轴) | a tornado pulls everyone into the middle, spins them up and drops them |
+  | 💰 Treasure Scroll (聚宝卷轴) | all your hearts back, +1 🔮, coins and gold rain down, and the soldiers are dazzled |
 
 ## Heroes
 
@@ -99,6 +109,8 @@ Every stage ends with both heroes' signature moves (Teddy's jab-straight and �
 - He gallops in on a little white horse at his buddy size and hops off.
 - He says hi with his signature move: Tommy's ✌️ Y pose, or Teddy's jab and straight. It bonks anyone close.
 - He brings a treat (+2 hearts): 包子 bao bun, 寿桃 longevity peach, 🍦 💧 🧃 🍪 🍉 or 🍌.
+- **And a freebie** on each new visit, in turn: a magic scroll, a 🔮, a weapon upgrade, another scroll, a bag of coins. (Calling again while he's still here brings another treat, not another freebie.)
+- He does what you do: he rides his little white horse when you ride and walks when you walk.
 - While he's there he **blocks every hit**: "TOMMY SAVED YOU!" (or "TEDDY SAVED YOU!"). His bar shows how long he'll stay (10 s).
 - He fights beside you, then says bye with his signature and runs off. Calling him again while he's there brings another treat and a full new visit.
 
@@ -121,7 +133,7 @@ Every stage ends with both heroes' signature moves (Teddy's jab-straight and �
 node tools/check.js --prove
 ```
 
-That runs 46 single-move checks (every hero's combo and magic, grab and toss, chests, food, horses and calling one, the companion blocking every hit, team-up, continues, the bonus timer), then the autopilot through every stage, bonus round and general in 11 set-ups (each hero, Easy and Normal, 1P and 2P, with and without the companion, calling horses, and a sloppy "kid" autopilot that never uses magic), and finally proves the check can fail (an idle player must not clear stage 1; a soldier pushed off-screen must be caught). Add `--soak 3` for 3 extra random seeds per run. In the browser, `game.soak()`, `game.moves()` and `game.prove()` run the same checks, and `game.start({ stage, hero, mode, difficulty })` with `game.step(seconds)` drives a real stage frame by frame.
+That runs 58 single-move checks (every hero's combo and magic, grab and toss, chests, food, horses and calling one, each scroll, the companion's freebies, the companion blocking every hit, team-up, continues, the bonus timer), then the autopilot through every stage, bonus round and general in 11 set-ups (each hero, Easy and Normal, 1P and 2P, with and without the companion, calling horses, and a sloppy "kid" autopilot that never uses magic), and finally proves the check can fail (an idle player must not clear stage 1; a soldier pushed off-screen must be caught). Add `--soak 3` for 3 extra random seeds per run. In the browser, `game.soak()`, `game.moves()` and `game.prove()` run the same checks, and `game.start({ stage, hero, mode, difficulty })` with `game.step(seconds)` drives a real stage frame by frame.
 
 ## Not verified
 

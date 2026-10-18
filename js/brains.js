@@ -484,11 +484,17 @@
       }
     }
     const onScreen = (it) => it.x > L && it.x < R;
+    // a magic scroll when it's crowded or a general is here
+    if (!opts.kid && h.scrolls && h.scrolls.length && (foes.length >= 3 || bossNear) && W.t > (mem.nextScroll || 0)) {
+      mem.nextScroll = W.t + 4;
+      inp.scroll = true;
+      return inp;
+    }
     // hurt? go and eat something
     const food = W.items.find((it) => W.R.FOOD[it.kind] && onScreen(it) && it.y < 0.3);
     if (food && h.hp < h.maxHp * 0.6) return Object.assign(inp, steer(h, food.x, food.z, 0.2));
     // a weapon upgrade or a 🔮 lying close by
-    const goody = W.items.find((it) => (it.kind === 'up' || it.kind === 'orb') && onScreen(it) && it.y < 0.3);
+    const goody = W.items.find((it) => (it.kind === 'up' || it.kind === 'orb' || it.kind === 'scroll') && onScreen(it) && it.y < 0.3);
     if (goody && close === 0) return Object.assign(inp, steer(h, goody.x, goody.z, 0.2));
     // a horse! hop on (not in the middle of a crowd)
     const horse = !h.horse && !opts.kid && W.items.find((it) => it.kind === 'horse' && onScreen(it) && it.left !== h.id && (!it.coming || it.owner === h.id));

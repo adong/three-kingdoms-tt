@@ -155,6 +155,12 @@
       flag.visible = false;
       v.p.armL.add(flag);
       v.flag = flag;
+      const ice = new T.Mesh(new T.BoxGeometry(1.15, 2.35, 1.0), new T.MeshStandardMaterial({ color: '#bff0ff', transparent: true, opacity: 0.5, roughness: 0.15, metalness: 0.1, emissive: '#5ad0ff', emissiveIntensity: 0.25, depthWrite: false }));
+      ice.position.y = 1.15;
+      ice.renderOrder = 4;
+      ice.visible = false;
+      v.p.root.add(ice);
+      v.ice = ice;
       v.cloth = cloth;
     } else {
       v.ball = spriteOf('🏀', 0.72);
@@ -179,7 +185,7 @@
 
   function dropView(v) {
     scene.remove(v.p.root, v.shadow, v.dizzy);
-    for (const k of ['excl', 'bar', 'ball', 'tag', 'horse']) if (v[k]) scene.remove(v[k]);
+    for (const k of ['excl', 'bar', 'ball', 'tag', 'horse', 'scrollSpr']) if (v[k]) scene.remove(v[k]);
   }
 
   function syncFighter(f, dt) {
@@ -213,7 +219,8 @@
       if (hints.face === 'cam' && f.who === 'tommy' && Math.random() < dt * 3) Fx.floatUp(Math.random() < 0.5 ? '✌️' : '⭐', f.x + (Math.random() - 0.5), 2.4, f.z, 0.5);
     } else {
       v.shotDone = false;
-      hints = Poses.apply(p, f, clock, dt, W);
+      // frozen in a block of ice: hold still (keep the last pose)
+      hints = f.frozen > 0 ? {} : Poses.apply(p, f, clock, dt, W);
     }
     // turn to face (quickly)
     let d = target - v.angle;
@@ -266,7 +273,24 @@
       v.dizzy.position.set(tmpA.x, tmpA.y + 0.55 * s, tmpA.z);
       v.orbit.forEach((o, i) => { const a = clock * 3.2 + (i * PI) / 2; o.position.set(Math.cos(a) * 0.5 * s, Math.sin(a * 2) * 0.05, Math.sin(a) * 0.5 * s); });
     }
+    if (f.kind !== 'enemy') {
+      const reading = f.state === 'special' && f.special === 'scroll' && R.SCROLLS[f.scrollKind];
+      if (reading && !v.scrollSpr) {
+        v.scrollSpr = spriteOf('📜', 0.9);
+        v.scrollSpr.renderOrder = 13;
+        scene.add(v.scrollSpr);
+      }
+      if (v.scrollSpr) {
+        v.scrollSpr.visible = !!reading;
+        if (reading) {
+          if (v.scrollKind !== f.scrollKind) { v.scrollKind = f.scrollKind; v.scrollSpr.material.map = M.iconTexture(R.SCROLLS[f.scrollKind].icon); }
+          v.scrollSpr.position.set(f.x, f.y + lift + 2.9 * s + Math.sin(clock * 6) * 0.08, f.z);
+          v.scrollSpr.scale.setScalar(0.9 + Math.min(1, f.st * 3) * 0.5);
+        }
+      }
+    }
     if (f.kind === 'enemy') {
+      v.ice.visible = f.frozen > 0;
       v.excl.visible = f.state === 'windup';
       if (v.excl.visible) {
         v.excl.position.set(f.x, f.y + 2.45 * s + Math.abs(Math.sin(clock * 12)) * 0.12, f.z);
@@ -330,7 +354,12 @@
           v.obj.rotation.y = (it.face || 1) > 0 ? -PI / 2 : PI / 2;
           v.horse = true;
         } else {
-          const icon = food ? food.icon : coin ? coin.icon : it.kind === 'up' ? '⚔️' : '🔮';
+          const icon = food ? food.icon : coin ? coin.icon : it.kind === 'up' ? '⚔️' : it.kind === 'scroll' ? '📜' : '🔮';
+          if (it.kind === 'scroll' && R.SCROLLS[it.scroll]) {
+            const badge = spriteOf(R.SCROLLS[it.scroll].icon, 0.42);
+            badge.position.set(0.25, 0.85, 0.05);
+            v.g.add(badge);
+          }
           v.obj = spriteOf(icon, coin ? (it.kind === 'ingot' ? 0.6 : 0.42) : 0.75);
           v.obj.position.y = coin ? 0.25 : 0.45;
           if (!coin) {
@@ -379,9 +408,15 @@
     // thrown things and rolling magic
     const seenS = new Set();
     for (const s of W.shots) {
-      if (s.kind === 'ring') continue;
+      if (s.kind === 'ring' || s.kind === 'strikes' || s.kind === 'whirl') continue;
       seenS.add(s.id);
       let v = shotViews.get(s.id);
+      if (s.style === 'dragon') {
+        if (!v) { v = M.makeDragon(); scene.add(v); shotViews.set(s.id, v); }
+        M.animDragon(v, s.x, 2.3, s.z + 0.5, clock);
+        if (Math.random() < 0.6) Fx.floatUp(Math.random() < 0.5 ? '✨' : '🔥', s.x - 2 - Math.random() * 6, 1.6 + Math.random() * 1.6, s.z + 0.5, 0.45);
+        continue;
+      }
       if (!v) {
         if (s.kind === 'sweep') {
           const icon = s.style === 'wind' ? '🌪️' : s.style === 'dart' ? '🎯' : '🌙';
@@ -548,6 +583,14 @@
       setText(c.querySelector('.coins'), 'coins' + i, `🪙 ${h.coins}`);
       setText(c.querySelector('.orbs'), 'orbs' + i, `🔮 ${h.orbs}`);
       setText(c.querySelector('.wlv'), 'wlv' + i, '⚔️' + '★'.repeat(h.wlv));
+      const icons = (h.scrolls || []).map((k) => R.SCROLLS[k].icon).join('');
+      setText(c.querySelector('.scr'), 'scr' + i, '📜' + icons);
+      c.querySelector('.scr').classList.toggle('none', !icons);
+      document.querySelectorAll(`.c${i} .tbtn.scr`).forEach((b) => {
+        b.classList.toggle('none', !icons);
+        const se = b.querySelector('.se'), want = icons ? R.SCROLLS[h.scrolls[0]].icon : '📜';
+        if (se.textContent !== want) se.textContent = want;
+      });
       const hc = c.querySelector('.horse');
       const calling = W.items.some((it) => it.kind === 'horse' && it.coming && it.owner === h.id);
       hc.classList.toggle('riding', !!h.horse);
@@ -819,6 +862,54 @@
           popBud();
           break;
         case 'buddyHop': addRunaway(e.x, e.z, -1, true); break;
+        // the magic scrolls
+        case 'scrollGet': {
+          const name = R.SCROLLS[e.kind].name;
+          toast(e.from ? `${name} FROM ${heroName(e.from)}!` : `${name}!`, 'save', e.icon);
+          const h = heroOf(e.who);
+          if (h) Fx.floatUp(e.icon, h.x, 2.6, h.z, 0.7);
+          sfx('pickup');
+          if (!W.scrollTip) { W.scrollTip = true; showTip('scroll'); }
+          break;
+        }
+        case 'scroll':
+          banner(e.name, 'small', 1.1, `${e.icon} ${e.icon} ${e.icon}`);
+          Fx.floatUp(e.icon, e.x, 3.2, e.z, 1.0);
+          sfx('scrollOpen');
+          break;
+        case 'scrollCast': if (e.kind === 'dragon') { sfx('roar'); shake = Math.max(shake, 1.2); } break;
+        case 'thunderStrike':
+          e.hits.forEach((p, i) => Fx.bolt(p.x, p.z, i * 0.04));
+          sfx('thunder');
+          shake = Math.max(shake, e.last ? 1 : 0.5);
+          break;
+        case 'freeze':
+          e.hits.forEach((p) => Fx.pow(p.x, 2.4, p.z, 'FREEZE!', false));
+          sfx('ice');
+          break;
+        case 'shatter': Fx.poof(e.x, 1.0, e.z, 0.9); Fx.pow(e.x, 1.6, e.z, 'CRACK!', true); sfx('jar'); break;
+        case 'thaw': Fx.poof(e.x, 1.0, e.z, 0.6); break;
+        case 'whirl': Fx.tornado(e.x, e.z, e.dur); sfx('gale'); break;
+        case 'whirlBlast':
+          Fx.ring(e.x, e.z, W.halfW, 12, 'wind', 1.6);
+          Fx.dust(e.x, e.z, 16, true);
+          sfx('blast');
+          shake = Math.max(shake, 1);
+          break;
+        case 'treasure':
+          Fx.confetti(e.x, 6, -0.5, 50);
+          e.hits.forEach((p) => Fx.floatUp('💫', p.x, 2.5, p.z, 0.6));
+          W.heroes.forEach((h) => { if (!h.out) Fx.floatUp('💖', h.x, 2.6, h.z, 0.8); });
+          sfx('treasure');
+          break;
+        case 'gift': {
+          const G2 = { orb: ['🔮', 'MAGIC ORB'], up: ['⚔️', 'WEAPON UP'], coins: ['💰', 'BAG OF COINS'] }[e.kind] || ['🎁', 'PRESENT'];
+          const h = W.heroes[0];
+          Fx.arc(G2[0], { x: e.x, y: 1.8, z: e.z }, { x: h.x, y: 1.8, z: h.z }, 0.5, 0.8, 1.2);
+          toast(`${G2[1]} FROM ${heroName(e.who)}!`, 'save', G2[0]);
+          sfx('level');
+          break;
+        }
         case 'buddyMount':
           if (clock > (rideToastT || 0)) { rideToastT = clock + 4; toast(`${heroName(e.who)} RIDES TOO!`, 'save', '🐎'); }
           sfx('neigh');

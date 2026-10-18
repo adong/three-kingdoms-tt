@@ -76,7 +76,7 @@
       x: W.cam.x - W.halfW - 0.8 - slot * 1.1, y: 0, z: W.mode === '1p' ? -0.4 : slot ? 0.3 : -1.1,
       vx: 0, vy: 0, vz: 0, face: 1, r: 0.4, scale: 1,
       hp: W.diff.hearts, maxHp: W.diff.hearts, lives: W.diff.lives, score: 0, coins: 0,
-      orbs: W.diff.orbs, orbFill: 0, wlv: 1, horse: false, horseCd: 0, tramp: {},
+      orbs: W.diff.orbs, orbFill: 0, wlv: 1, horse: false, horseCd: 0, tramp: {}, scrolls: [],
       state: 'enter', st: 0, move: null, combo: 0, comboT: 9, queued: false,
       grab: null, bops: 0, bopT: -1, contact: 0,
       inv: 0, freeze: 0, flash: 0, shield: false, out: false, ko: false, stun: 0,
@@ -354,7 +354,10 @@
     const D = h.def;
     // the rescue spin (swing + jump together) works mid-swing, while holding someone, or while being bonked:
     // that's when you need it
-    if (h.kind === 'hero' && (inp.rescue || (inp.attack && inp.jump)) && RESCUE_FROM.includes(h.state)) {
+    if (h.kind === 'hero' && inp.scroll && h.scrolls && h.scrolls.length && RESCUE_FROM.includes(h.state)) {
+      if (h.grab) { const g = h.grab; g.heldBy = null; g.state = 'hurt'; g.st = 0; g.stun = 0.3; h.grab = null; }
+      startScroll(W, h);
+    } else if (h.kind === 'hero' && (inp.rescue || (inp.attack && inp.jump)) && RESCUE_FROM.includes(h.state)) {
       if (h.grab) { const g = h.grab; g.heldBy = null; g.state = 'hurt'; g.st = 0; g.stun = 0.3; h.grab = null; }
       startSpecial(W, h, true);
     }
@@ -411,6 +414,7 @@
 
   // jump is there because people often press G a hair before F: then you spin in the air and drop to the ground
   const RESCUE_FROM = ['idle', 'walk', 'run', 'land', 'attack', 'hurt', 'grab', 'toss', 'jump'];
+  const randomScroll = (W) => W.R.SCROLL_ORDER[Math.floor(W.rand() * W.R.SCROLL_ORDER.length)];
 
   function idle(h) {
     h.state = 'idle';
@@ -720,7 +724,10 @@
     const R = W.R;
     if (c.drop === 'coins') popCoins(W, c.x, c.z + 0.2, c.look === 'jar' ? 3 + Math.floor(W.rand() * 3) : R.CHEST.coins);
     else if (c.drop === 'ingot') { spawnItem(W, 'ingot', c.x, c.z + 0.3, true); popCoins(W, c.x, c.z + 0.2, 2); }
-    else spawnItem(W, c.drop, c.x, c.z + 0.35, true);
+    else if (c.drop.startsWith('scroll')) {
+      const it = spawnItem(W, 'scroll', c.x, c.z + 0.35, true);
+      it.scroll = c.drop.split(':')[1] || randomScroll(W);
+    } else spawnItem(W, c.drop, c.x, c.z + 0.35, true);
   }
 
   function startJump(W, h, inp) {
@@ -969,8 +976,144 @@
           ev(W, 'rearStomp', { who: h.who, x: h.x + h.face * 0.6, z: h.z, max: P.radius });
         }
         break;
+      case 'scroll':
+        if (fire) castScroll(W, h, h.scrollKind);
+        break;
     }
     if (h.st >= P.len && h.y <= 0) idle(h);
+  }
+
+  // ---------------------------------------------------------------- magic scrolls
+
+  // A scroll for your bag (up to SCROLL_MAX; a full bag turns it into coins). from: who brought it, if anyone.
+  function giveScroll(W, h, kind, from) {
+    if (h.scrolls.length < W.R.SCROLL_MAX) h.scrolls.push(kind);
+    else popCoins(W, h.x, h.z, 5);
+    const S = W.R.SCROLLS[kind];
+    ev(W, 'scrollGet', { who: h.who, kind, name: S.name, icon: S.icon, from, x: h.x, z: h.z, full: h.scrolls.length >= W.R.SCROLL_MAX });
+  }
+
+  // E reads the next scroll: you hold it up high (safe while you do), then its magic hits the whole screen.
+  // On a horse you stay in the saddle.
+  function startScroll(W, h) {
+    const kind = h.scrolls.shift();
+    if (h.drag) fling(W, h);
+    h.state = 'special';
+    h.st = 0;
+    h.vx = h.vz = 0;
+    h.vy = Math.min(h.vy || 0, 0);
+    h.special = 'scroll';
+    h.scrollKind = kind;
+    h.specDone = false;
+    h.inv = Math.max(h.inv, W.R.SPECIALS.scroll.len + 0.6);
+    h.move = null;
+    W.stats.scrolls = (W.stats.scrolls || 0) + 1;
+    const S = W.R.SCROLLS[kind];
+    ev(W, 'scroll', { who: h.who, kind, name: S.name, icon: S.icon, x: h.x, z: h.z });
+  }
+
+  // Everyone in the window: soldiers that aren't beaten or still walking in from off-screen.
+  const inWindow = (W, e) => !e.gone && !e.ko && e.state !== 'runoff' && e.x > viewL(W) - 0.6 && e.x < viewR(W) + 0.6 && !(e.state === 'enter' && (e.x < viewL(W) || e.x > viewR(W)));
+
+  function castScroll(W, h, kind) {
+    const S = W.R.SCROLLS[kind];
+    const zc = (W.zMin + W.zMax) / 2;
+    if (kind === 'dragon') {
+      // a dragon flies in from the left edge and out the right, bonking everyone on the way
+      const s = sweepShot(W, h, { dir: 1, speed: S.speed, w: 1.4, zHalf: 9, dmg: S.dmg, style: 'dragon', x: W.cam.x - W.halfW - 1.2, z: zc });
+      s.boss = S.boss;
+      s.life = (W.halfW * 2 + 3) / S.speed + 0.5;
+    } else if (kind === 'thunder') {
+      const ids = W.enemies.filter((e) => inWindow(W, e)).map((e) => e.id);
+      W.shots.push({ id: W.nextId++, kind: 'strikes', team: 'kids', owner: h, ids, left: S.strikes, t: S.every, every: S.every, S, x: h.x, z: h.z });
+    } else if (kind === 'ice') {
+      const hits = [];
+      for (const e of W.enemies) {
+        if (!inWindow(W, e) || e.state === 'enter') continue;
+        e.frozen = e.boss ? S.bossTime : S.time;
+        if (e.heldBy) { e.heldBy.grab = null; e.heldBy.drag = null; e.heldBy = null; e.state = 'idle'; e.y = 0; }
+        hits.push({ x: e.x, z: e.z });
+      }
+      ev(W, 'freeze', { hits });
+    } else if (kind === 'wind') {
+      W.shots.push({ id: W.nextId++, kind: 'whirl', team: 'kids', owner: h, x: W.cam.x, z: zc, t: 0, S, hit: new Set() });
+      ev(W, 'whirl', { x: W.cam.x, z: zc, dur: S.pull });
+    } else if (kind === 'gold') {
+      for (const o of W.heroes) {
+        if (!activeHero(o)) continue;
+        o.hp = o.maxHp;
+        o.orbs = Math.min(W.diff.maxOrbs, o.orbs + S.orbs);
+      }
+      for (let i = 0; i < S.coins; i++) {
+        const it = spawnItem(W, i % 5 === 4 ? 'ingot' : 'coin', W.cam.x - W.halfW + 1 + W.rand() * (W.halfW * 2 - 2), W.zMin + W.rand() * (W.zMax - W.zMin), true);
+        it.y = 4 + W.rand() * 3;
+        it.vy = 0;
+        it.vx = 0;
+      }
+      const hits = [];
+      for (const e of W.enemies) {
+        if (!inWindow(W, e) || e.state === 'enter') continue;
+        if (!['idle', 'walk', 'windup', 'attack', 'recover', 'hurt', 'getup'].includes(e.state)) continue;
+        if (e.heldBy) { e.heldBy.grab = null; e.heldBy.drag = null; e.heldBy = null; }
+        popCoins(W, e.x, e.z, 2);
+        e.state = 'hurt';
+        e.st = 0;
+        e.stun = e.boss ? S.stun * 0.5 : S.stun;
+        e.vx = e.vz = 0;
+        e.y = 0;
+        hits.push({ x: e.x, z: e.z });
+      }
+      ev(W, 'treasure', { x: W.cam.x, hits });
+    }
+    ev(W, 'scrollCast', { who: h.who, kind });
+  }
+
+  // Thunder: a strike on each soldier every `every` s; the last one knocks them down.
+  function strikesStep(W, s) {
+    s.t += DT;
+    if (s.t < s.every) return;
+    s.t = 0;
+    s.left--;
+    const S = s.S, last = s.left <= 0;
+    const hits = [];
+    for (const id of s.ids) {
+      const e = W.enemies.find((o) => o.id === id);
+      if (!e || !hittable(W, e)) continue;
+      hits.push({ x: e.x, z: e.z });
+      const dmg = e.boss ? (e.maxHp * S.boss) / S.strikes : S.dmg;
+      damageEnemy(W, e, dmg, { knock: last, dir: sign(e.x - s.x) || 1, word: 'ZAP!', big: true, by: s.owner, special: last, stun: 0.5 });
+    }
+    ev(W, 'thunderStrike', { hits, last });
+    if (last) s.gone = true;
+  }
+
+  // Whirlwind: everyone is pulled into a big tornado in the middle, spun up, then dropped with a bump.
+  function whirlStep(W, s) {
+    s.t += DT;
+    const S = s.S;
+    for (const e of W.enemies) {
+      if (!inWindow(W, e) || e.state === 'enter' || ['down', 'lying', 'dizzy', 'flag'].includes(e.state)) continue;
+      if (s.t < S.pull) {
+        if (e.heldBy) { e.heldBy.grab = null; e.heldBy.drag = null; e.heldBy = null; e.y = 0; }
+        const dx = s.x - e.x, dz = s.z - e.z, d = Math.hypot(dx, dz);
+        const sp = Math.min(d, S.pullSpeed * (e.boss ? 0.5 : 1) * DT);
+        if (d > 0.3) { e.x += (dx / d) * sp; e.z = clamp(e.z + (dz / d) * sp, W.zMin, W.zMax); }
+        e.state = 'hurt';
+        e.st = 0;
+        e.stun = 0.3;
+        e.vx = e.vz = 0;
+        s.hit.add(e.id);
+      }
+    }
+    if (s.t >= S.pull && !s.blasted) {
+      s.blasted = true;
+      for (const e of W.enemies) {
+        if (!s.hit.has(e.id) || !hittable(W, e)) continue;
+        damageEnemy(W, e, e.boss ? e.maxHp * S.boss : S.dmg, { knock: true, dir: sign(e.x - s.x) || (W.rand() < 0.5 ? 1 : -1), word: 'WHIRL!', big: true, by: s.owner, special: true });
+      }
+      ev(W, 'whirlBlast', { x: s.x, z: s.z });
+    }
+    if (s.t > S.pull + 0.4) s.gone = true;
   }
 
   // A shockwave ring that spreads out from (x, z) and knocks down the other team.
@@ -1016,7 +1159,7 @@
         id: W.nextId++, kind: 'buddy', who, slot: 1, def: W.R.HEROES[who],
         x: W.cam.x - W.halfW - 0.6, y: 0, z: clamp(h.z + 0.6, W.zMin, W.zMax), vx: 0, vy: 0, vz: 0, face: 1, r: 0.35, scale: 1,
         hp: 1, maxHp: 1, state: 'bEnter', st: 0, move: null, combo: 0, comboT: 9, queued: false, wlv: 1, horse: !!h.horse, tramp: {},
-        grab: null, bops: 0, bopT: -1, contact: 0, inv: 99, freeze: 0, flash: 0, wantTreat: 1, score: 0,
+        grab: null, bops: 0, bopT: -1, contact: 0, inv: 99, freeze: 0, flash: 0, wantTreat: 1, wantGift: 1, score: 0,
       };
       ev(W, 'buddy', { who, x: W.buddy.x, z: W.buddy.z });
     } else {
@@ -1091,6 +1234,11 @@
           W.stats.treats++;
           ev(W, 'treat', { who: b.who, to: h.who, icon: T.icon, name: T.name, x: b.x, z: b.z, tx: h.x, tz: h.z, heal });
         }
+        // and a freebie, once per visit: a scroll, a 🔮, a weapon upgrade or a bag of coins
+        if (b.st > 0.55 && b.wantGift > 0 && activeHero(h)) {
+          b.wantGift--;
+          giveGift(W, b, h);
+        }
         if (b.st > 0.75) {
           b.gave = false;
           b.state = b.wantTreat > 0 ? 'bGive' : 'fight';
@@ -1127,6 +1275,21 @@
         fighterBody(W, b, {});
         if (!['grab', 'toss', 'hurt', 'attack', 'jump', 'land'].includes(b.state)) b.state = 'idle';
     }
+  }
+
+  function giveGift(W, b, h) {
+    const gifts = W.R.BUDDY.gifts;
+    const kind = gifts[(W.giftN || 0) % gifts.length];
+    W.giftN = (W.giftN || 0) + 1;
+    W.stats.gifts = (W.stats.gifts || 0) + 1;
+    if (kind === 'scroll') return giveScroll(W, h, randomScroll(W), b.who);
+    let k = kind;
+    if (k === 'orb' && h.orbs >= W.diff.maxOrbs) k = 'coins';
+    if (k === 'up' && h.wlv >= W.R.WEAPON_LEVEL.max) k = 'coins';
+    if (k === 'orb') h.orbs++;
+    else if (k === 'up') h.wlv++;
+    else popCoins(W, h.x, h.z, 8);
+    ev(W, 'gift', { who: b.who, to: h.who, kind: k, x: b.x, z: b.z, tx: h.x, tz: h.z, lv: h.wlv });
   }
 
   function teamUp(W) {
@@ -1190,6 +1353,7 @@
 
   function damageEnemy(W, e, dmg, o) {
     if (e.gone || e.ko) return;
+    if (e.frozen > 0) dmg *= W.R.SCROLLS.ice.mult;
     e.hp -= dmg;
     e.flash = 0.15;
     e.barT = 2.2;
@@ -1268,6 +1432,7 @@
     f.move = null;
     if (f.kind === 'enemy') {
       f.x = clamp(f.x, viewL(W), viewR(W));
+      if (f.frozen > 0) { f.frozen = 0; ev(W, 'shatter', { x: f.x, z: f.z }); }
       if (ko) {
         beaten(W, f, dir);
         if (f.boss && !W.bossDown) {
@@ -1448,6 +1613,10 @@
         h.orbs = Math.min(W.diff.maxOrbs, h.orbs + 1);
         h.score += 100;
         ev(W, 'orb', { who: h.who, orbs: h.orbs, x: it.x, z: it.z });
+      } else if (it.kind === 'scroll') {
+        it.gone = true;
+        h.score += 100;
+        giveScroll(W, h, it.scroll || randomScroll(W), null);
       }
     }
     W.items = W.items.filter((i) => !i.gone);
@@ -1518,6 +1687,18 @@
 
   function updateEnemy(W, e) {
     if (e.freeze > 0) { e.freeze -= DT; return; }
+    if (e.frozen > 0) {
+      e.frozen -= DT;
+      if (e.frozen <= 0) { e.frozen = 0; ev(W, 'thaw', { id: e.id, x: e.x, z: e.z }); }
+      else if (['idle', 'walk', 'windup', 'attack', 'recover'].includes(e.state)) {
+        e.state = 'idle';
+        e.vx = e.vz = 0;
+        e.y = 0;
+        e.flash = Math.max(0, e.flash - DT);
+        e.barT = Math.max(0, e.barT - DT);
+        return;
+      }
+    }
     e.st += DT;
     e.flash = Math.max(0, e.flash - DT);
     e.barT = Math.max(0, e.barT - DT);
@@ -1691,6 +1872,8 @@
       s.t = (s.t || 0) + DT;
       if (s.kind === 'ring') { ringStep(W, s); continue; }
       if (s.kind === 'sweep') { sweepStep(W, s); continue; }
+      if (s.kind === 'strikes') { strikesStep(W, s); continue; }
+      if (s.kind === 'whirl') { whirlStep(W, s); continue; }
       s.vy -= (s.g || 0) * DT;
       s.x += s.vx * DT;
       s.y += s.vy * DT;
@@ -1718,14 +1901,14 @@
       if (s.hit.has(e.id) || !hittable(W, e)) continue;
       if (Math.abs(e.x - s.x) > s.w + e.r || Math.abs(e.z - s.z) > s.zHalf) continue;
       s.hit.add(e.id);
-      const word = s.style === 'wind' ? 'WHOOSH!' : s.style === 'dart' ? 'THWIP!' : 'SHING!';
-      damageEnemy(W, e, s.dmg, { knock: true, dir: sign(s.vx) || 1, word, big: true, by: s.owner, special: true });
+      const word = s.style === 'wind' ? 'WHOOSH!' : s.style === 'dart' ? 'THWIP!' : s.style === 'dragon' ? 'ROAR!' : 'SHING!';
+      damageEnemy(W, e, e.boss && s.boss ? e.maxHp * s.boss : s.dmg, { knock: true, dir: sign(s.vx) || 1, word, big: true, by: s.owner, special: true });
     }
     for (const c of W.crates) {
       if (!c.gone && Math.abs(c.x - s.x) < s.w + 0.3 && Math.abs(c.z - s.z) < s.zHalf) openCrate(W, c, s.owner);
     }
     W.crates = W.crates.filter((c) => !c.gone);
-    if (s.t > 3 || s.x < W.cam.x - W.halfW - 1.5 || s.x > W.cam.x + W.halfW + 1.5) s.gone = true;
+    if (s.t > (s.life || 3) || s.x < W.cam.x - W.halfW - 1.5 || s.x > W.cam.x + W.halfW + 1.5) s.gone = true;
   }
 
   function ringStep(W, s) {

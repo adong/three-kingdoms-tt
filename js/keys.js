@@ -12,6 +12,7 @@ Kit.help.setup({
     ['dash', 'double-tap A or D', 'double-tap ← or →'],
     ['walk into a soldier to grab him, swing to toss him', 'F', 'J'],
     ['call a horse (walk to it to ride, jump to hop off)', 'R', 'O'],
+    ['read a magic scroll (from chests, or your brother brings one)', 'E', 'U'],
     ['on a horse: swing next to a soldier to scoop him up, swing again to fling him', 'F', 'J'],
     ['call your brother · team-up', 'T', 'Enter'],
     ['pause · sound', 'P or Esc · M', ''],

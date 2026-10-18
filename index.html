@@ -112,6 +112,10 @@
   .tbtn.hrs { grid-column: 1; grid-row: 1; background: linear-gradient(160deg, #ffc27a, #c8763a); }
   .tbtn.hrs.wait { opacity: 0.45; filter: grayscale(0.8); }
   #touch.two .c1 .hrs { grid-column: 2; }
+  .chip.scr { display: inline-flex; border-color: #ffd23a; background: rgba(160, 110, 20, 0.5); }
+  .chip.scr.none, .tbtn.scr.none { opacity: 0.45; filter: grayscale(0.8); }
+  .tbtn.scr { position: absolute; top: 0; right: calc(100% + 10px); width: 64px; height: 64px; font-size: 26px; background: linear-gradient(160deg, #ffe07a, #d8a420); }
+  #touch.two .c1 .tbtn.scr { right: auto; left: calc(100% + 10px); }
   .hp { position: relative; height: 22px; border-radius: 8px; background: rgba(20, 18, 31, 0.7); border: 3px solid #fff; overflow: hidden; box-shadow: 0 3px 0 var(--ink); }
   .hp b { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; transform-origin: left; }
   .right .hp b { transform-origin: right; }
@@ -462,7 +466,7 @@
       <div class="col">
         <div class="row"><span class="nm">TEDDY</span><span class="who">1P</span><span class="lives"></span></div>
         <div class="hearts"></div>
-        <div class="sub"><span class="score">0</span><span class="chip coins"></span><span class="chip orbs"></span><span class="chip wlv"></span><span class="chip horse">🐎</span><span class="chip shield">🛡️ SAFE</span><span class="chip out"></span></div>
+        <div class="sub"><span class="score">0</span><span class="chip coins"></span><span class="chip orbs"></span><span class="chip wlv"></span><span class="chip horse">🐎</span><span class="chip scr none">📜</span><span class="chip shield">🛡️ SAFE</span><span class="chip out"></span></div>
       </div>
     </div>
     <div class="mid">
@@ -477,7 +481,7 @@
       <div class="col">
         <div class="row"><span class="nm">TOMMY</span><span class="who">2P</span><span class="lives"></span></div>
         <div class="hearts"></div>
-        <div class="sub"><span class="score">0</span><span class="chip coins"></span><span class="chip orbs"></span><span class="chip wlv"></span><span class="chip horse">🐎</span><span class="chip shield">🛡️ SAFE</span><span class="chip out"></span></div>
+        <div class="sub"><span class="score">0</span><span class="chip coins"></span><span class="chip orbs"></span><span class="chip wlv"></span><span class="chip horse">🐎</span><span class="chip scr none">📜</span><span class="chip shield">🛡️ SAFE</span><span class="chip out"></span></div>
       </div>
     </div>
     <button class="budcard" id="budCard" title="Call your brother (T)">
@@ -509,6 +513,7 @@
       <button class="tbtn jmp" data-act="jump" data-side="0">⬆️<small>JUMP</small></button>
       <button class="tbtn atk" data-act="attack" data-side="0">⚔️<small>SWING</small></button>
       <button class="tbtn hrs" data-act="horse" data-side="0">🐎<small>HORSE</small></button>
+      <button class="tbtn scr none" data-act="scroll" data-side="0"><span class="se">📜</span><small>SCROLL</small></button>
     </div>
   </div>
   <div class="c1">
@@ -518,6 +523,7 @@
       <button class="tbtn jmp" data-act="jump" data-side="1">⬆️<small>JUMP</small></button>
       <button class="tbtn atk" data-act="attack" data-side="1">⚔️<small>SWING</small></button>
       <button class="tbtn hrs" data-act="horse" data-side="1">🐎<small>HORSE</small></button>
+      <button class="tbtn scr none" data-act="scroll" data-side="1"><span class="se">📜</span><small>SCROLL</small></button>
     </div>
   </div>
 </div>
@@ -540,6 +546,7 @@
     <span>swing · jump · magic</span><span><kbd>F</kbd><kbd>G</kbd><kbd>H</kbd></span><span><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></span>
     <span>dash</span><span>double-tap <kbd>A</kbd>/<kbd>D</kbd></span><span>double-tap <kbd>←</kbd>/<kbd>→</kbd></span>
     <span>call a horse</span><span><kbd>R</kbd></span><span><kbd>O</kbd></span>
+    <span>read a magic scroll</span><span><kbd>E</kbd></span><span><kbd>U</kbd></span>
     <span>call your brother / team-up</span><span><kbd>T</kbd></span><span><kbd>Enter</kbd></span>
   </div>
   <p class="touch-hint">Joystick to walk (flick it twice to dash). ⚔️ swing, ⬆️ jump, ✨ magic. Tap your brother's face to call him! On an iPad, two players can play side by side.</p>

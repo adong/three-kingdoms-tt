@@ -25,6 +25,7 @@
     'SHING!': ['#7dff9a', '#e8fff0', '#1f7a3a'], 'WHOA!': ['#c58a4a', '#ffd9a0', '#ffffff'], 'CRACK!': ['#c87a4a', '#ffd9b0', '#ffffff'],
     'PERFECT!': ['#ffd400', '#ff8a1f', '#ffffff'], 'LEVEL UP!': ['#7dff5a', '#ffffff', '#1f7a3a'],
     'BUMP!': ['#ffb070', '#fff0d8', '#a0402a'], 'GOTCHA!': ['#ffd400', '#ffffff', '#c0302a'], 'NEIGH!': ['#c58a4a', '#ffe0b0', '#ffffff'],
+    'ROAR!': ['#e53935', '#ffd400', '#ffffff'], 'FREEZE!': ['#8ae8ff', '#ffffff', '#1f6fe0'],
   };
 
   // Chinese words need a font that has them (Bungee doesn't).
@@ -216,6 +217,13 @@
     }
   }
 
+  // A big spinning tornado (the whirlwind scroll) that grows, wobbles and fades after `dur` seconds.
+  function tornado(x, z, dur) {
+    const s = sprite(G.emojiTexture('🌪️'), 0.5, x, 2.4, z, {});
+    s.renderOrder = 7;
+    live.push({ kind: 'tornado', s, t: 0, life: dur + 0.5, size: 5.2, x, vx: 0, vy: 0, vz: 0, g: 0, spin: 0 });
+  }
+
   // A cartoon lightning bolt from the sky onto (x, z), for Zoom's THUNDER ROAR and the wizard.
   let boltTex = null;
   function bolt(x, z, delay = 0) {
@@ -251,6 +259,14 @@
         remove(e);
         live.splice(i, 1);
         if (e.onDone) e.onDone();
+        continue;
+      }
+      if (e.kind === 'tornado') {
+        const grow = Math.min(1, e.t / 0.35), fade = u > 0.8 ? (1 - u) / 0.2 : 1;
+        e.s.scale.set(e.size * grow * (1 + Math.sin(e.t * 9) * 0.05), e.size * 1.2 * grow, 1);
+        e.s.position.x = e.x + Math.sin(e.t * 7) * 0.25;
+        e.s.material.rotation = Math.sin(e.t * 14) * 0.08;
+        e.s.material.opacity = fade;
         continue;
       }
       if (e.kind === 'bolt') {
@@ -331,5 +347,5 @@
   // paint the bursts in the new language now, not mid-fight
   const repaint = () => Object.keys(STYLE).forEach(burstTexture);
 
-  window.TKFx = { repaint, init, pow, stars, feathers, dust, poof, ring, arc, floatUp, confetti, bolt, update, clear, sprite, burstTexture, setIcons, count: () => live.length };
+  window.TKFx = { repaint, init, pow, stars, feathers, dust, poof, ring, arc, floatUp, confetti, bolt, tornado, update, clear, sprite, burstTexture, setIcons, count: () => live.length };
 })();

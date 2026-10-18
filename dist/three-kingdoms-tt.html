@@ -112,6 +112,10 @@
   .tbtn.hrs { grid-column: 1; grid-row: 1; background: linear-gradient(160deg, #ffc27a, #c8763a); }
   .tbtn.hrs.wait { opacity: 0.45; filter: grayscale(0.8); }
   #touch.two .c1 .hrs { grid-column: 2; }
+  .chip.scr { display: inline-flex; border-color: #ffd23a; background: rgba(160, 110, 20, 0.5); }
+  .chip.scr.none, .tbtn.scr.none { opacity: 0.45; filter: grayscale(0.8); }
+  .tbtn.scr { position: absolute; top: 0; right: calc(100% + 10px); width: 64px; height: 64px; font-size: 26px; background: linear-gradient(160deg, #ffe07a, #d8a420); }
+  #touch.two .c1 .tbtn.scr { right: auto; left: calc(100% + 10px); }
   .hp { position: relative; height: 22px; border-radius: 8px; background: rgba(20, 18, 31, 0.7); border: 3px solid #fff; overflow: hidden; box-shadow: 0 3px 0 var(--ink); }
   .hp b { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; transform-origin: left; }
   .right .hp b { transform-origin: right; }
@@ -462,7 +466,7 @@
       <div class="col">
         <div class="row"><span class="nm">TEDDY</span><span class="who">1P</span><span class="lives"></span></div>
         <div class="hearts"></div>
-        <div class="sub"><span class="score">0</span><span class="chip coins"></span><span class="chip orbs"></span><span class="chip wlv"></span><span class="chip horse">🐎</span><span class="chip shield">🛡️ SAFE</span><span class="chip out"></span></div>
+        <div class="sub"><span class="score">0</span><span class="chip coins"></span><span class="chip orbs"></span><span class="chip wlv"></span><span class="chip horse">🐎</span><span class="chip scr none">📜</span><span class="chip shield">🛡️ SAFE</span><span class="chip out"></span></div>
       </div>
     </div>
     <div class="mid">
@@ -477,7 +481,7 @@
       <div class="col">
         <div class="row"><span class="nm">TOMMY</span><span class="who">2P</span><span class="lives"></span></div>
         <div class="hearts"></div>
-        <div class="sub"><span class="score">0</span><span class="chip coins"></span><span class="chip orbs"></span><span class="chip wlv"></span><span class="chip horse">🐎</span><span class="chip shield">🛡️ SAFE</span><span class="chip out"></span></div>
+        <div class="sub"><span class="score">0</span><span class="chip coins"></span><span class="chip orbs"></span><span class="chip wlv"></span><span class="chip horse">🐎</span><span class="chip scr none">📜</span><span class="chip shield">🛡️ SAFE</span><span class="chip out"></span></div>
       </div>
     </div>
     <button class="budcard" id="budCard" title="Call your brother (T)">
@@ -509,6 +513,7 @@
       <button class="tbtn jmp" data-act="jump" data-side="0">⬆️<small>JUMP</small></button>
       <button class="tbtn atk" data-act="attack" data-side="0">⚔️<small>SWING</small></button>
       <button class="tbtn hrs" data-act="horse" data-side="0">🐎<small>HORSE</small></button>
+      <button class="tbtn scr none" data-act="scroll" data-side="0"><span class="se">📜</span><small>SCROLL</small></button>
     </div>
   </div>
   <div class="c1">
@@ -518,6 +523,7 @@
       <button class="tbtn jmp" data-act="jump" data-side="1">⬆️<small>JUMP</small></button>
       <button class="tbtn atk" data-act="attack" data-side="1">⚔️<small>SWING</small></button>
       <button class="tbtn hrs" data-act="horse" data-side="1">🐎<small>HORSE</small></button>
+      <button class="tbtn scr none" data-act="scroll" data-side="1"><span class="se">📜</span><small>SCROLL</small></button>
     </div>
   </div>
 </div>
@@ -540,6 +546,7 @@
     <span>swing · jump · magic</span><span><kbd>F</kbd><kbd>G</kbd><kbd>H</kbd></span><span><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></span>
     <span>dash</span><span>double-tap <kbd>A</kbd>/<kbd>D</kbd></span><span>double-tap <kbd>←</kbd>/<kbd>→</kbd></span>
     <span>call a horse</span><span><kbd>R</kbd></span><span><kbd>O</kbd></span>
+    <span>read a magic scroll</span><span><kbd>E</kbd></span><span><kbd>U</kbd></span>
     <span>call your brother / team-up</span><span><kbd>T</kbd></span><span><kbd>Enter</kbd></span>
   </div>
   <p class="touch-hint">Joystick to walk (flick it twice to dash). ⚔️ swing, ⬆️ jump, ✨ magic. Tap your brother's face to call him! On an iPad, two players can play side by side.</p>
@@ -2111,6 +2118,7 @@ window.TK_TITLE = {
     crescent: { len: 0.85, at: 0.3, speed: 9, dmg: 24, width: 0.9, zHalf: 1.7 },               // a giant moon-shaped wave rolls forward
     rescue:   { len: 0.6, at: 0.14, radius: 2.5, speed: 11, dmg: 12 },                         // the spin when you're surrounded
     rear:     { len: 0.75, at: 0.42, radius: 2.9, speed: 11, dmg: 14 },                         // the same on a horse: it rears up and stomps
+    scroll:   { len: 0.9, at: 0.35 },                                                           // holding up a magic scroll (SCROLLS below)
   };
 
   // ---------------------------------------------------------------- the straw-hat army
@@ -2235,7 +2243,23 @@ window.TK_TITLE = {
     treatHeal: 2,      // hearts a treat gives back
     power: 0.7,        // his hits are this strong compared with yours
     helloRadius: 2.6,  // his hello move bonks anyone this close
+    // a freebie on top of the treat, once per visit (not for calling again while he's still here), in this order
+    gifts: ['scroll', 'orb', 'up', 'scroll', 'coins'],
   };
+
+  // ---------------------------------------------------------------- magic scrolls
+
+  // Found in chests and brought by your brother. E (U for player 2, 📜 on touch) reads the next one you carry
+  // (up to `max`). Each one does something to every soldier on the screen.
+  const SCROLLS = {
+    dragon:  { name: 'DRAGON SCROLL', icon: '🐉', speed: 11, dmg: 999, boss: 0.25 },        // a dragon flies across: everyone beaten
+    thunder: { name: 'THUNDER SCROLL', icon: '⚡', strikes: 3, every: 0.3, dmg: 14, boss: 0.18 }, // 3 lightning strikes on everyone
+    ice:     { name: 'ICE SCROLL', icon: '❄️', time: 5, bossTime: 3, mult: 2 },              // frozen solid; your hits do double
+    wind:    { name: 'WHIRLWIND SCROLL', icon: '🌪️', pull: 1.4, pullSpeed: 5, dmg: 20, boss: 0.15 }, // pulled in, spun up, dropped
+    gold:    { name: 'TREASURE SCROLL', icon: '💰', coins: 16, stun: 2.5, orbs: 1 },         // hearts and 🔮 for you, coins rain, they're dazzled
+  };
+  const SCROLL_ORDER = ['dragon', 'thunder', 'ice', 'wind', 'gold'];
+  const SCROLL_MAX = 3;
 
   // ---------------------------------------------------------------- difficulty
 
@@ -2252,7 +2276,7 @@ window.TK_TITLE = {
     },
   };
 
-  window.TK_RULES = { WORLD, MOVES, WEAPON_LEVEL, HEROES, HERO_ORDER, SPECIALS, ENEMIES, BOSSES, SHOTS, FOOD, COINS, CHEST, HORSE, TREATS, BUDDY, DIFF };
+  window.TK_RULES = { WORLD, MOVES, WEAPON_LEVEL, HEROES, HERO_ORDER, SPECIALS, ENEMIES, BOSSES, SHOTS, FOOD, COINS, CHEST, HORSE, TREATS, BUDDY, SCROLLS, SCROLL_ORDER, SCROLL_MAX, DIFF };
 })();
 
 </script>
@@ -2527,6 +2551,11 @@ window.TK_STAGES = [
   },
 ];
 
+// Every stage hides a magic scroll in a chest at its third stop (which scroll is a surprise).
+window.TK_STAGES.forEach((s) => {
+  if (!s.bonus && s.sections[2]) (s.sections[2].chests = s.sections[2].chests || []).push({ x: 0.6, z: -2.2, drop: 'scroll' });
+});
+
 // The first stage teaches the moves: what each tip says, with keys or on a touch screen.
 window.TK_TIPS = {
   move:  { keys: 'Walk with W A S D. Swing your weapon with F!', touch: 'Walk with the joystick. Tap ⚔️ to swing!' },
@@ -2535,6 +2564,7 @@ window.TK_TIPS = {
   magic: { keys: 'H = magic! It uses a 🔮. Press T to call your brother!', touch: 'Tap ✨ for magic! It uses a 🔮. Tap your brother\'s face to call him!' },
   horse: { keys: 'A horse! Walk to it to ride, G hops off. Press R any time to call one.', touch: 'A horse! Walk to it to ride, ⬆️ hops off. Tap 🐎 any time to call one.' },
   // two players
+  scroll: { keys: 'A magic scroll! Press E to read it: it does something to every soldier on the screen.', touch: 'A magic scroll! Tap 📜 to read it: it does something to every soldier on the screen.' },
   move2:  { keys: 'Player 1: W A S D and F. Player 2: the arrows and J.', touch: 'Each player has a joystick and ⚔️ to swing!' },
   magic2: { keys: 'H or L = magic! It uses a 🔮. T = TEAM-UP!', touch: 'Tap ✨ for magic! It uses a 🔮. Tap TEAM-UP when it glows!' },
 };
@@ -2619,7 +2649,7 @@ window.TK_TIPS = {
       x: W.cam.x - W.halfW - 0.8 - slot * 1.1, y: 0, z: W.mode === '1p' ? -0.4 : slot ? 0.3 : -1.1,
       vx: 0, vy: 0, vz: 0, face: 1, r: 0.4, scale: 1,
       hp: W.diff.hearts, maxHp: W.diff.hearts, lives: W.diff.lives, score: 0, coins: 0,
-      orbs: W.diff.orbs, orbFill: 0, wlv: 1, horse: false, horseCd: 0, tramp: {},
+      orbs: W.diff.orbs, orbFill: 0, wlv: 1, horse: false, horseCd: 0, tramp: {}, scrolls: [],
       state: 'enter', st: 0, move: null, combo: 0, comboT: 9, queued: false,
       grab: null, bops: 0, bopT: -1, contact: 0,
       inv: 0, freeze: 0, flash: 0, shield: false, out: false, ko: false, stun: 0,
@@ -2897,7 +2927,10 @@ window.TK_TIPS = {
     const D = h.def;
     // the rescue spin (swing + jump together) works mid-swing, while holding someone, or while being bonked:
     // that's when you need it
-    if (h.kind === 'hero' && (inp.rescue || (inp.attack && inp.jump)) && RESCUE_FROM.includes(h.state)) {
+    if (h.kind === 'hero' && inp.scroll && h.scrolls && h.scrolls.length && RESCUE_FROM.includes(h.state)) {
+      if (h.grab) { const g = h.grab; g.heldBy = null; g.state = 'hurt'; g.st = 0; g.stun = 0.3; h.grab = null; }
+      startScroll(W, h);
+    } else if (h.kind === 'hero' && (inp.rescue || (inp.attack && inp.jump)) && RESCUE_FROM.includes(h.state)) {
       if (h.grab) { const g = h.grab; g.heldBy = null; g.state = 'hurt'; g.st = 0; g.stun = 0.3; h.grab = null; }
       startSpecial(W, h, true);
     }
@@ -2954,6 +2987,7 @@ window.TK_TIPS = {
 
   // jump is there because people often press G a hair before F: then you spin in the air and drop to the ground
   const RESCUE_FROM = ['idle', 'walk', 'run', 'land', 'attack', 'hurt', 'grab', 'toss', 'jump'];
+  const randomScroll = (W) => W.R.SCROLL_ORDER[Math.floor(W.rand() * W.R.SCROLL_ORDER.length)];
 
   function idle(h) {
     h.state = 'idle';
@@ -3263,7 +3297,10 @@ window.TK_TIPS = {
     const R = W.R;
     if (c.drop === 'coins') popCoins(W, c.x, c.z + 0.2, c.look === 'jar' ? 3 + Math.floor(W.rand() * 3) : R.CHEST.coins);
     else if (c.drop === 'ingot') { spawnItem(W, 'ingot', c.x, c.z + 0.3, true); popCoins(W, c.x, c.z + 0.2, 2); }
-    else spawnItem(W, c.drop, c.x, c.z + 0.35, true);
+    else if (c.drop.startsWith('scroll')) {
+      const it = spawnItem(W, 'scroll', c.x, c.z + 0.35, true);
+      it.scroll = c.drop.split(':')[1] || randomScroll(W);
+    } else spawnItem(W, c.drop, c.x, c.z + 0.35, true);
   }
 
   function startJump(W, h, inp) {
@@ -3512,8 +3549,144 @@ window.TK_TIPS = {
           ev(W, 'rearStomp', { who: h.who, x: h.x + h.face * 0.6, z: h.z, max: P.radius });
         }
         break;
+      case 'scroll':
+        if (fire) castScroll(W, h, h.scrollKind);
+        break;
     }
     if (h.st >= P.len && h.y <= 0) idle(h);
+  }
+
+  // ---------------------------------------------------------------- magic scrolls
+
+  // A scroll for your bag (up to SCROLL_MAX; a full bag turns it into coins). from: who brought it, if anyone.
+  function giveScroll(W, h, kind, from) {
+    if (h.scrolls.length < W.R.SCROLL_MAX) h.scrolls.push(kind);
+    else popCoins(W, h.x, h.z, 5);
+    const S = W.R.SCROLLS[kind];
+    ev(W, 'scrollGet', { who: h.who, kind, name: S.name, icon: S.icon, from, x: h.x, z: h.z, full: h.scrolls.length >= W.R.SCROLL_MAX });
+  }
+
+  // E reads the next scroll: you hold it up high (safe while you do), then its magic hits the whole screen.
+  // On a horse you stay in the saddle.
+  function startScroll(W, h) {
+    const kind = h.scrolls.shift();
+    if (h.drag) fling(W, h);
+    h.state = 'special';
+    h.st = 0;
+    h.vx = h.vz = 0;
+    h.vy = Math.min(h.vy || 0, 0);
+    h.special = 'scroll';
+    h.scrollKind = kind;
+    h.specDone = false;
+    h.inv = Math.max(h.inv, W.R.SPECIALS.scroll.len + 0.6);
+    h.move = null;
+    W.stats.scrolls = (W.stats.scrolls || 0) + 1;
+    const S = W.R.SCROLLS[kind];
+    ev(W, 'scroll', { who: h.who, kind, name: S.name, icon: S.icon, x: h.x, z: h.z });
+  }
+
+  // Everyone in the window: soldiers that aren't beaten or still walking in from off-screen.
+  const inWindow = (W, e) => !e.gone && !e.ko && e.state !== 'runoff' && e.x > viewL(W) - 0.6 && e.x < viewR(W) + 0.6 && !(e.state === 'enter' && (e.x < viewL(W) || e.x > viewR(W)));
+
+  function castScroll(W, h, kind) {
+    const S = W.R.SCROLLS[kind];
+    const zc = (W.zMin + W.zMax) / 2;
+    if (kind === 'dragon') {
+      // a dragon flies in from the left edge and out the right, bonking everyone on the way
+      const s = sweepShot(W, h, { dir: 1, speed: S.speed, w: 1.4, zHalf: 9, dmg: S.dmg, style: 'dragon', x: W.cam.x - W.halfW - 1.2, z: zc });
+      s.boss = S.boss;
+      s.life = (W.halfW * 2 + 3) / S.speed + 0.5;
+    } else if (kind === 'thunder') {
+      const ids = W.enemies.filter((e) => inWindow(W, e)).map((e) => e.id);
+      W.shots.push({ id: W.nextId++, kind: 'strikes', team: 'kids', owner: h, ids, left: S.strikes, t: S.every, every: S.every, S, x: h.x, z: h.z });
+    } else if (kind === 'ice') {
+      const hits = [];
+      for (const e of W.enemies) {
+        if (!inWindow(W, e) || e.state === 'enter') continue;
+        e.frozen = e.boss ? S.bossTime : S.time;
+        if (e.heldBy) { e.heldBy.grab = null; e.heldBy.drag = null; e.heldBy = null; e.state = 'idle'; e.y = 0; }
+        hits.push({ x: e.x, z: e.z });
+      }
+      ev(W, 'freeze', { hits });
+    } else if (kind === 'wind') {
+      W.shots.push({ id: W.nextId++, kind: 'whirl', team: 'kids', owner: h, x: W.cam.x, z: zc, t: 0, S, hit: new Set() });
+      ev(W, 'whirl', { x: W.cam.x, z: zc, dur: S.pull });
+    } else if (kind === 'gold') {
+      for (const o of W.heroes) {
+        if (!activeHero(o)) continue;
+        o.hp = o.maxHp;
+        o.orbs = Math.min(W.diff.maxOrbs, o.orbs + S.orbs);
+      }
+      for (let i = 0; i < S.coins; i++) {
+        const it = spawnItem(W, i % 5 === 4 ? 'ingot' : 'coin', W.cam.x - W.halfW + 1 + W.rand() * (W.halfW * 2 - 2), W.zMin + W.rand() * (W.zMax - W.zMin), true);
+        it.y = 4 + W.rand() * 3;
+        it.vy = 0;
+        it.vx = 0;
+      }
+      const hits = [];
+      for (const e of W.enemies) {
+        if (!inWindow(W, e) || e.state === 'enter') continue;
+        if (!['idle', 'walk', 'windup', 'attack', 'recover', 'hurt', 'getup'].includes(e.state)) continue;
+        if (e.heldBy) { e.heldBy.grab = null; e.heldBy.drag = null; e.heldBy = null; }
+        popCoins(W, e.x, e.z, 2);
+        e.state = 'hurt';
+        e.st = 0;
+        e.stun = e.boss ? S.stun * 0.5 : S.stun;
+        e.vx = e.vz = 0;
+        e.y = 0;
+        hits.push({ x: e.x, z: e.z });
+      }
+      ev(W, 'treasure', { x: W.cam.x, hits });
+    }
+    ev(W, 'scrollCast', { who: h.who, kind });
+  }
+
+  // Thunder: a strike on each soldier every `every` s; the last one knocks them down.
+  function strikesStep(W, s) {
+    s.t += DT;
+    if (s.t < s.every) return;
+    s.t = 0;
+    s.left--;
+    const S = s.S, last = s.left <= 0;
+    const hits = [];
+    for (const id of s.ids) {
+      const e = W.enemies.find((o) => o.id === id);
+      if (!e || !hittable(W, e)) continue;
+      hits.push({ x: e.x, z: e.z });
+      const dmg = e.boss ? (e.maxHp * S.boss) / S.strikes : S.dmg;
+      damageEnemy(W, e, dmg, { knock: last, dir: sign(e.x - s.x) || 1, word: 'ZAP!', big: true, by: s.owner, special: last, stun: 0.5 });
+    }
+    ev(W, 'thunderStrike', { hits, last });
+    if (last) s.gone = true;
+  }
+
+  // Whirlwind: everyone is pulled into a big tornado in the middle, spun up, then dropped with a bump.
+  function whirlStep(W, s) {
+    s.t += DT;
+    const S = s.S;
+    for (const e of W.enemies) {
+      if (!inWindow(W, e) || e.state === 'enter' || ['down', 'lying', 'dizzy', 'flag'].includes(e.state)) continue;
+      if (s.t < S.pull) {
+        if (e.heldBy) { e.heldBy.grab = null; e.heldBy.drag = null; e.heldBy = null; e.y = 0; }
+        const dx = s.x - e.x, dz = s.z - e.z, d = Math.hypot(dx, dz);
+        const sp = Math.min(d, S.pullSpeed * (e.boss ? 0.5 : 1) * DT);
+        if (d > 0.3) { e.x += (dx / d) * sp; e.z = clamp(e.z + (dz / d) * sp, W.zMin, W.zMax); }
+        e.state = 'hurt';
+        e.st = 0;
+        e.stun = 0.3;
+        e.vx = e.vz = 0;
+        s.hit.add(e.id);
+      }
+    }
+    if (s.t >= S.pull && !s.blasted) {
+      s.blasted = true;
+      for (const e of W.enemies) {
+        if (!s.hit.has(e.id) || !hittable(W, e)) continue;
+        damageEnemy(W, e, e.boss ? e.maxHp * S.boss : S.dmg, { knock: true, dir: sign(e.x - s.x) || (W.rand() < 0.5 ? 1 : -1), word: 'WHIRL!', big: true, by: s.owner, special: true });
+      }
+      ev(W, 'whirlBlast', { x: s.x, z: s.z });
+    }
+    if (s.t > S.pull + 0.4) s.gone = true;
   }
 
   // A shockwave ring that spreads out from (x, z) and knocks down the other team.
@@ -3559,7 +3732,7 @@ window.TK_TIPS = {
         id: W.nextId++, kind: 'buddy', who, slot: 1, def: W.R.HEROES[who],
         x: W.cam.x - W.halfW - 0.6, y: 0, z: clamp(h.z + 0.6, W.zMin, W.zMax), vx: 0, vy: 0, vz: 0, face: 1, r: 0.35, scale: 1,
         hp: 1, maxHp: 1, state: 'bEnter', st: 0, move: null, combo: 0, comboT: 9, queued: false, wlv: 1, horse: !!h.horse, tramp: {},
-        grab: null, bops: 0, bopT: -1, contact: 0, inv: 99, freeze: 0, flash: 0, wantTreat: 1, score: 0,
+        grab: null, bops: 0, bopT: -1, contact: 0, inv: 99, freeze: 0, flash: 0, wantTreat: 1, wantGift: 1, score: 0,
       };
       ev(W, 'buddy', { who, x: W.buddy.x, z: W.buddy.z });
     } else {
@@ -3634,6 +3807,11 @@ window.TK_TIPS = {
           W.stats.treats++;
           ev(W, 'treat', { who: b.who, to: h.who, icon: T.icon, name: T.name, x: b.x, z: b.z, tx: h.x, tz: h.z, heal });
         }
+        // and a freebie, once per visit: a scroll, a 🔮, a weapon upgrade or a bag of coins
+        if (b.st > 0.55 && b.wantGift > 0 && activeHero(h)) {
+          b.wantGift--;
+          giveGift(W, b, h);
+        }
         if (b.st > 0.75) {
           b.gave = false;
           b.state = b.wantTreat > 0 ? 'bGive' : 'fight';
@@ -3670,6 +3848,21 @@ window.TK_TIPS = {
         fighterBody(W, b, {});
         if (!['grab', 'toss', 'hurt', 'attack', 'jump', 'land'].includes(b.state)) b.state = 'idle';
     }
+  }
+
+  function giveGift(W, b, h) {
+    const gifts = W.R.BUDDY.gifts;
+    const kind = gifts[(W.giftN || 0) % gifts.length];
+    W.giftN = (W.giftN || 0) + 1;
+    W.stats.gifts = (W.stats.gifts || 0) + 1;
+    if (kind === 'scroll') return giveScroll(W, h, randomScroll(W), b.who);
+    let k = kind;
+    if (k === 'orb' && h.orbs >= W.diff.maxOrbs) k = 'coins';
+    if (k === 'up' && h.wlv >= W.R.WEAPON_LEVEL.max) k = 'coins';
+    if (k === 'orb') h.orbs++;
+    else if (k === 'up') h.wlv++;
+    else popCoins(W, h.x, h.z, 8);
+    ev(W, 'gift', { who: b.who, to: h.who, kind: k, x: b.x, z: b.z, tx: h.x, tz: h.z, lv: h.wlv });
   }
 
   function teamUp(W) {
@@ -3733,6 +3926,7 @@ window.TK_TIPS = {
 
   function damageEnemy(W, e, dmg, o) {
     if (e.gone || e.ko) return;
+    if (e.frozen > 0) dmg *= W.R.SCROLLS.ice.mult;
     e.hp -= dmg;
     e.flash = 0.15;
     e.barT = 2.2;
@@ -3811,6 +4005,7 @@ window.TK_TIPS = {
     f.move = null;
     if (f.kind === 'enemy') {
       f.x = clamp(f.x, viewL(W), viewR(W));
+      if (f.frozen > 0) { f.frozen = 0; ev(W, 'shatter', { x: f.x, z: f.z }); }
       if (ko) {
         beaten(W, f, dir);
         if (f.boss && !W.bossDown) {
@@ -3991,6 +4186,10 @@ window.TK_TIPS = {
         h.orbs = Math.min(W.diff.maxOrbs, h.orbs + 1);
         h.score += 100;
         ev(W, 'orb', { who: h.who, orbs: h.orbs, x: it.x, z: it.z });
+      } else if (it.kind === 'scroll') {
+        it.gone = true;
+        h.score += 100;
+        giveScroll(W, h, it.scroll || randomScroll(W), null);
       }
     }
     W.items = W.items.filter((i) => !i.gone);
@@ -4061,6 +4260,18 @@ window.TK_TIPS = {
 
   function updateEnemy(W, e) {
     if (e.freeze > 0) { e.freeze -= DT; return; }
+    if (e.frozen > 0) {
+      e.frozen -= DT;
+      if (e.frozen <= 0) { e.frozen = 0; ev(W, 'thaw', { id: e.id, x: e.x, z: e.z }); }
+      else if (['idle', 'walk', 'windup', 'attack', 'recover'].includes(e.state)) {
+        e.state = 'idle';
+        e.vx = e.vz = 0;
+        e.y = 0;
+        e.flash = Math.max(0, e.flash - DT);
+        e.barT = Math.max(0, e.barT - DT);
+        return;
+      }
+    }
     e.st += DT;
     e.flash = Math.max(0, e.flash - DT);
     e.barT = Math.max(0, e.barT - DT);
@@ -4234,6 +4445,8 @@ window.TK_TIPS = {
       s.t = (s.t || 0) + DT;
       if (s.kind === 'ring') { ringStep(W, s); continue; }
       if (s.kind === 'sweep') { sweepStep(W, s); continue; }
+      if (s.kind === 'strikes') { strikesStep(W, s); continue; }
+      if (s.kind === 'whirl') { whirlStep(W, s); continue; }
       s.vy -= (s.g || 0) * DT;
       s.x += s.vx * DT;
       s.y += s.vy * DT;
@@ -4261,14 +4474,14 @@ window.TK_TIPS = {
       if (s.hit.has(e.id) || !hittable(W, e)) continue;
       if (Math.abs(e.x - s.x) > s.w + e.r || Math.abs(e.z - s.z) > s.zHalf) continue;
       s.hit.add(e.id);
-      const word = s.style === 'wind' ? 'WHOOSH!' : s.style === 'dart' ? 'THWIP!' : 'SHING!';
-      damageEnemy(W, e, s.dmg, { knock: true, dir: sign(s.vx) || 1, word, big: true, by: s.owner, special: true });
+      const word = s.style === 'wind' ? 'WHOOSH!' : s.style === 'dart' ? 'THWIP!' : s.style === 'dragon' ? 'ROAR!' : 'SHING!';
+      damageEnemy(W, e, e.boss && s.boss ? e.maxHp * s.boss : s.dmg, { knock: true, dir: sign(s.vx) || 1, word, big: true, by: s.owner, special: true });
     }
     for (const c of W.crates) {
       if (!c.gone && Math.abs(c.x - s.x) < s.w + 0.3 && Math.abs(c.z - s.z) < s.zHalf) openCrate(W, c, s.owner);
     }
     W.crates = W.crates.filter((c) => !c.gone);
-    if (s.t > 3 || s.x < W.cam.x - W.halfW - 1.5 || s.x > W.cam.x + W.halfW + 1.5) s.gone = true;
+    if (s.t > (s.life || 3) || s.x < W.cam.x - W.halfW - 1.5 || s.x > W.cam.x + W.halfW + 1.5) s.gone = true;
   }
 
   function ringStep(W, s) {
@@ -4898,11 +5111,17 @@ window.TK_TIPS = {
       }
     }
     const onScreen = (it) => it.x > L && it.x < R;
+    // a magic scroll when it's crowded or a general is here
+    if (!opts.kid && h.scrolls && h.scrolls.length && (foes.length >= 3 || bossNear) && W.t > (mem.nextScroll || 0)) {
+      mem.nextScroll = W.t + 4;
+      inp.scroll = true;
+      return inp;
+    }
     // hurt? go and eat something
     const food = W.items.find((it) => W.R.FOOD[it.kind] && onScreen(it) && it.y < 0.3);
     if (food && h.hp < h.maxHp * 0.6) return Object.assign(inp, steer(h, food.x, food.z, 0.2));
     // a weapon upgrade or a 🔮 lying close by
-    const goody = W.items.find((it) => (it.kind === 'up' || it.kind === 'orb') && onScreen(it) && it.y < 0.3);
+    const goody = W.items.find((it) => (it.kind === 'up' || it.kind === 'orb' || it.kind === 'scroll') && onScreen(it) && it.y < 0.3);
     if (goody && close === 0) return Object.assign(inp, steer(h, goody.x, goody.z, 0.2));
     // a horse! hop on (not in the middle of a crowd)
     const horse = !h.horse && !opts.kid && W.items.find((it) => it.kind === 'horse' && onScreen(it) && it.left !== h.id && (!it.coming || it.owner === h.id));
@@ -5051,7 +5270,7 @@ window.TK_TIPS = {
             const notes = [];
             if (s.call && s.mode === '1p') notes.push(`buddy x${r.seen.buddy}, treats ${r.seen.treats}, saves ${r.stats.saves}`);
             if (s.call && s.mode === '2p') notes.push(`team-ups ${r.stats.teamups}`);
-            notes.push(`magic ${r.stats.specials}, rescue ${r.stats.rescues}, ouch ${r.stats.ouch}, coins ${r.coins}, rides ${r.stats.rides}` + (s.horse ? `, horses called ${r.stats.horseCalls}` : ''));
+            notes.push(`magic ${r.stats.specials}, rescue ${r.stats.rescues}, scrolls ${r.stats.scrolls || 0}, ouch ${r.stats.ouch}, coins ${r.coins}, rides ${r.stats.rides}` + (s.horse ? `, horses called ${r.stats.horseCalls}` : ''));
             log(pad(r.stage + (seed !== seeds[0] ? ` #${seed}` : ''), 14) + pad(s.name, 26) + pad(r.ok ? 'CLEAR' : 'FAIL', 7) +
               pad(r.time.toFixed(0) + 's', 7) + pad(r.stats.kos, 5) + pad(r.stats.deaths, 4) + pad(r.continues, 4) + notes.join(', '));
           }
@@ -5291,6 +5510,46 @@ window.TK_TIPS = {
     W = fresh({ hero: 'luna' }); step(W, { call: true }); step(W, {}, 5);
     ok("a friend's companion is Tommy; Tommy's is Teddy", W.buddy && W.buddy.who === 'tommy' && S.buddyFor('tommy') === 'teddy');
 
+    // magic scrolls: in chests, carried (up to 3), each one hits every soldier in the window its own way
+    W = fresh(); W.crates.push({ id: 998, x: W.heroes[0].x + 1.2, z: 0, drop: 'scroll:ice', look: 'chest' });
+    step(W, { attack: true }); step(W, {}, 50); step(W, { mx: 1 }, 30);
+    ok('a chest can hold a magic scroll; walk over it to carry it', W.heroes[0].scrolls.join() === 'ice', W.heroes[0].scrolls.join());
+    W = fresh(); for (let k = 0; k < 4; k++) { S.spawnItem(W, 'scroll', W.heroes[0].x + 0.4, 0, false).scroll = 'gold'; step(W, { mx: 0.2 }, 6); }
+    ok(`you carry up to ${window.TK_RULES.SCROLL_MAX} scrolls (a 4th turns into coins)`, W.heroes[0].scrolls.length === window.TK_RULES.SCROLL_MAX, `carrying ${W.heroes[0].scrolls.length}`);
+    const scrollRun = (kind, frames, horse) => {
+      const W = fresh(); const h = W.heroes[0]; h.scrolls = [kind]; h.hp = 2; h.x = W.cam.x - 3;
+      if (horse) h.horse = true;
+      const soldiers = [foe(W, 'straw', 2), foe(W, 'bot', 6, -1.0), foe(W, 'turban', 8.5, 1.0)];
+      const gen = S.spawnEnemy(W, 'sergeant', 1); gen.x = h.x + 4.5; gen.z = 0.4; gen.state = 'idle'; gen.ai.cool = 999;
+      step(W, { scroll: true }); step(W, {}, frames);
+      return { W, h, soldiers, gen };
+    };
+    let r = scrollRun('dragon', 150);
+    ok('🐉 dragon scroll: a dragon flies across and every soldier is beaten; the general loses a quarter', r.soldiers.every((x) => x.ko || x.gone) && Math.abs(r.gen.hp - r.gen.maxHp * 0.75) < 1 && !r.h.scrolls.length, r.soldiers.map((x) => x.state).join() + ` general ${Math.round(r.gen.hp)}/${r.gen.maxHp}`);
+    r = scrollRun('thunder', 90);
+    ok('⚡ thunder scroll: three strikes on every soldier, the last one knocks them down', r.W.events.filter((x) => x.type === 'thunderStrike').length === 3 && r.soldiers.every((x) => x.state !== 'idle' && x.hp < x.maxHp) && r.gen.hp < r.gen.maxHp, r.soldiers.map((x) => x.state).join());
+    r = scrollRun('ice', 60);
+    const frozen = r.soldiers.every((x) => x.frozen > 0 && x.state === 'idle') && r.gen.frozen > 0;
+    const before = r.soldiers[0].hp; r.soldiers[0].frozen = 3;
+    S.damageEnemy(r.W, r.soldiers[0], 3, { by: r.h });
+    ok('❄️ ice scroll: every soldier and the general frozen still; hits on them do double', frozen && before - r.soldiers[0].hp === 6, `frozen ${frozen}, dmg ${before - r.soldiers[0].hp}`);
+    r = scrollRun('wind', 50);
+    const zc = (r.W.zMin + r.W.zMax) / 2, mid = r.W.cam.x;
+    const pulled = r.soldiers.every((x) => Math.abs(x.x - mid) < 3 && Math.abs(x.z - zc) < 1.2);
+    step(r.W, {}, 60);
+    ok('🌪️ whirlwind scroll: everyone is pulled into the middle, then knocked down', pulled && r.soldiers.every((x) => x.state !== 'idle' && x.hp < x.maxHp), `pulled ${pulled}, ${r.soldiers.map((x) => x.state).join()}`);
+    r = scrollRun('gold', 40);
+    ok('💰 treasure scroll: all your hearts back, coins rain down, the soldiers are dazzled', r.h.hp === r.h.maxHp && r.soldiers.every((x) => x.state === 'hurt') && r.W.items.filter((i) => window.TK_RULES.COINS[i.kind]).length >= 16, `hp ${r.h.hp}, ${r.soldiers.map((x) => x.state).join()}`);
+    r = scrollRun('dragon', 150, true);
+    ok('read a scroll on a horse: you stay in the saddle', r.h.horse && r.soldiers.every((x) => x.ko || x.gone), `horse ${r.h.horse}`);
+    // your brother brings a freebie each visit (a scroll first), not for calling again while he's here
+    W = fresh(); step(W, { call: true }); step(W, {}, 200);
+    const firstGift = W.heroes[0].scrolls.length === 1;
+    step(W, { call: true }); step(W, {}, 120);
+    const once = W.stats.gifts === 1;
+    W.buddyT = 0; step(W, {}, 300); step(W, { call: true }); step(W, {}, 200);
+    ok('calling your brother brings a freebie each visit: a scroll first, then a 🔮, a weapon upgrade...', firstGift && once && W.stats.gifts === 2 && W.heroes[0].orbs === W.diff.orbs + 1, `first ${firstGift}, once ${once}, gifts ${W.stats.gifts}, orbs ${W.heroes[0].orbs}`);
+
     // team-up (2P): every regular soldier on screen is bonked
     W = fresh({ mode: '2p' });
     W.heroes[1].x = W.heroes[0].x; W.heroes[1].state = 'idle';
@@ -5327,7 +5586,7 @@ window.TK_TIPS = {
    buttons for touch. Presses are latched until the game reads them, so a tap shorter than one frame still counts.
      Player 1: W A S D walk, F attack, G jump, H magic
      Player 2: arrows walk, J attack, K jump, L magic
-     T or Enter: call your brother (1 player) / team-up (2 players).  R / O: call a horse.
+     T or Enter: call your brother (1 player) / team-up (2 players).  R / O: call a horse.  E / U: read a scroll.
      Double-tap left or right to dash.
      Attack + jump together: the rescue spin.
    In 1-player mode both key sets drive you, and Space jumps too. */
@@ -5336,12 +5595,12 @@ window.TK_TIPS = {
 
   const KEYS = {
     KeyA: [0, 'left'], KeyD: [0, 'right'], KeyW: [0, 'up'], KeyS: [0, 'down'],
-    KeyF: [0, 'attack'], KeyG: [0, 'jump'], KeyH: [0, 'special'], KeyT: [0, 'call'], KeyR: [0, 'horse'],
+    KeyF: [0, 'attack'], KeyG: [0, 'jump'], KeyH: [0, 'special'], KeyT: [0, 'call'], KeyR: [0, 'horse'], KeyE: [0, 'scroll'],
     ArrowLeft: [1, 'left'], ArrowRight: [1, 'right'], ArrowUp: [1, 'up'], ArrowDown: [1, 'down'],
-    KeyJ: [1, 'attack'], KeyK: [1, 'jump'], KeyL: [1, 'special'], Enter: [1, 'call'], NumpadEnter: [1, 'call'], KeyO: [1, 'horse'],
+    KeyJ: [1, 'attack'], KeyK: [1, 'jump'], KeyL: [1, 'special'], Enter: [1, 'call'], NumpadEnter: [1, 'call'], KeyO: [1, 'horse'], KeyU: [1, 'scroll'],
     Space: [0, 'jump'],
   };
-  const PRESS = { attack: 1, jump: 1, special: 1, call: 1, horse: 1, rescue: 1 };
+  const PRESS = { attack: 1, jump: 1, special: 1, call: 1, horse: 1, rescue: 1, scroll: 1 };
   const DASH_GAP = 0.3; // seconds between two taps of the same direction
 
   let twoPlayer = false;
@@ -5413,7 +5672,7 @@ window.TK_TIPS = {
 
   // The controller for one brother this step. Clears the presses it reports.
   function read(slot) {
-    const out = { mx: 0, mz: 0, attack: false, jump: false, special: false, call: false, horse: false, rescue: false, dash: 0 };
+    const out = { mx: 0, mz: 0, attack: false, jump: false, special: false, call: false, horse: false, rescue: false, scroll: false, dash: 0 };
     if (!enabled) return out;
     const srcs = twoPlayer ? [slot] : [0, 1];
     for (const s of srcs) {
@@ -5754,6 +6013,12 @@ window.TK_TIPS = {
         break;
       case 'special': case 'team': {
         const who = f.who;
+        if (f.state === 'special' && f.special === 'scroll') {
+          // holding the magic scroll up high with both hands
+          Object.assign(T, { la: 2.95, ra: 2.95, laz: -0.25, raz: 0.25, lean: 0.12, head: -0.35, ll: 0.3, rl: -0.2 });
+          k = K.fast;
+          break;
+        }
         if (f.state === 'special' && f.special === 'rear') {
           // the horse rears up: hold on and cheer, then lean in for the stomp
           if (st < 0.42) Object.assign(T, { la: 2.8, ra: 2.9, laz: -0.3, raz: 0.3, lean: 0.25, head: -0.3 });
@@ -6541,6 +6806,7 @@ window.TK_TIPS = {
     'SHING!': ['#7dff9a', '#e8fff0', '#1f7a3a'], 'WHOA!': ['#c58a4a', '#ffd9a0', '#ffffff'], 'CRACK!': ['#c87a4a', '#ffd9b0', '#ffffff'],
     'PERFECT!': ['#ffd400', '#ff8a1f', '#ffffff'], 'LEVEL UP!': ['#7dff5a', '#ffffff', '#1f7a3a'],
     'BUMP!': ['#ffb070', '#fff0d8', '#a0402a'], 'GOTCHA!': ['#ffd400', '#ffffff', '#c0302a'], 'NEIGH!': ['#c58a4a', '#ffe0b0', '#ffffff'],
+    'ROAR!': ['#e53935', '#ffd400', '#ffffff'], 'FREEZE!': ['#8ae8ff', '#ffffff', '#1f6fe0'],
   };
 
   // Chinese words need a font that has them (Bungee doesn't).
@@ -6732,6 +6998,13 @@ window.TK_TIPS = {
     }
   }
 
+  // A big spinning tornado (the whirlwind scroll) that grows, wobbles and fades after `dur` seconds.
+  function tornado(x, z, dur) {
+    const s = sprite(G.emojiTexture('🌪️'), 0.5, x, 2.4, z, {});
+    s.renderOrder = 7;
+    live.push({ kind: 'tornado', s, t: 0, life: dur + 0.5, size: 5.2, x, vx: 0, vy: 0, vz: 0, g: 0, spin: 0 });
+  }
+
   // A cartoon lightning bolt from the sky onto (x, z), for Zoom's THUNDER ROAR and the wizard.
   let boltTex = null;
   function bolt(x, z, delay = 0) {
@@ -6767,6 +7040,14 @@ window.TK_TIPS = {
         remove(e);
         live.splice(i, 1);
         if (e.onDone) e.onDone();
+        continue;
+      }
+      if (e.kind === 'tornado') {
+        const grow = Math.min(1, e.t / 0.35), fade = u > 0.8 ? (1 - u) / 0.2 : 1;
+        e.s.scale.set(e.size * grow * (1 + Math.sin(e.t * 9) * 0.05), e.size * 1.2 * grow, 1);
+        e.s.position.x = e.x + Math.sin(e.t * 7) * 0.25;
+        e.s.material.rotation = Math.sin(e.t * 14) * 0.08;
+        e.s.material.opacity = fade;
         continue;
       }
       if (e.kind === 'bolt') {
@@ -6847,7 +7128,7 @@ window.TK_TIPS = {
   // paint the bursts in the new language now, not mid-fight
   const repaint = () => Object.keys(STYLE).forEach(burstTexture);
 
-  window.TKFx = { repaint, init, pow, stars, feathers, dust, poof, ring, arc, floatUp, confetti, bolt, update, clear, sprite, burstTexture, setIcons, count: () => live.length };
+  window.TKFx = { repaint, init, pow, stars, feathers, dust, poof, ring, arc, floatUp, confetti, bolt, tornado, update, clear, sprite, burstTexture, setIcons, count: () => live.length };
 })();
 
 </script>
@@ -6897,6 +7178,16 @@ window.TK_TIPS = {
       S().tone({ f: 260, to: 120, dur: 0.1, vol: 0.18 });
     },
     coin() { S().coin(1); },
+    // the scrolls
+    scrollOpen() { S().hiss({ filter: 'bandpass', f: 1800, to: 900, q: 1, dur: 0.35, vol: 0.12 }); [784, 988, 1175].forEach((f, i) => S().tone({ type: 'triangle', f, dur: 0.18, vol: 0.08, at: 0.1 + i * 0.07 })); },
+    roar() {
+      S().tone({ type: 'sawtooth', f: 90, to: 60, dur: 1.1, vol: 0.18, lp: 600 });
+      S().tone({ type: 'sawtooth', f: 140, to: 95, dur: 0.9, vol: 0.1, lp: 900, at: 0.05 });
+      S().hiss({ filter: 'lowpass', f: 900, to: 300, dur: 1.0, vol: 0.25, attack: 0.1 });
+      sfx.gong();
+    },
+    ice() { [1568, 2093, 2637, 3136, 2349].forEach((f, i) => S().tone({ type: 'sine', f, dur: 0.25, vol: 0.06, at: i * 0.05 })); S().hiss({ filter: 'highpass', f: 5000, dur: 0.4, vol: 0.08 }); },
+    treasure() { for (let i = 0; i < 8; i++) S().coin(1 + (i % 3)); sfx.tune(); },
     thunder() {
       S().hiss({ filter: 'lowpass', f: 3000, to: 120, dur: 0.9, vol: 0.45 });
       S().tone({ f: 70, to: 35, dur: 0.8, vol: 0.4 });
@@ -7345,6 +7636,66 @@ window.TK_TIPS = {
     h.userData.head.rotation.x = Math.sin(phase) * 0.06 * (amp > 0.1 ? 1 : 0.3);
   }
 
+  // ---------------------------------------------------------------- the scroll dragon
+
+  // A long red-and-gold Chinese dragon made of segments, flying toward +x (left to right across the screen).
+  function makeDragon() {
+    const g = new T.Group();
+    const red = m('#d8302a', { emissive: '#5a0a0a', emissiveIntensity: 0.35 });
+    const gold = m('#ffd23a', { metalness: 0.4, roughness: 0.4, emissive: '#7a5a00', emissiveIntensity: 0.35 });
+    const white = m('#fff8e8', { emissive: '#ffffff', emissiveIntensity: 0.3 }), dark = m('#14121f');
+    const head = new T.Group();
+    g.add(head);
+    boxIn(head, 0.95, 0.62, 0.72, red, 0.25, 0.05, 0);          // skull
+    boxIn(head, 0.75, 0.32, 0.62, red, 0.85, 0.12, 0);          // snout
+    boxIn(head, 0.7, 0.16, 0.56, gold, 0.8, -0.22, 0);          // open jaw
+    boxIn(head, 0.12, 0.1, 0.5, white, 1.12, -0.06, 0);         // teeth
+    for (const s of [-1, 1]) {
+      boxIn(head, 0.16, 0.16, 0.06, white, 0.45, 0.22, s * 0.37); // eyes
+      boxIn(head, 0.08, 0.1, 0.07, dark, 0.49, 0.21, s * 0.4);
+      const horn = add(head, new T.ConeGeometry(0.08, 0.6, 6), gold, -0.05, 0.5, s * 0.2);
+      horn.rotation.z = 0.9;
+      const wh = boxIn(head, 0.9, 0.04, 0.04, gold, 0.65, 0.0, s * 0.42); // whiskers
+      wh.rotation.y = s * 0.3;
+      wh.rotation.z = -0.2;
+      wh.userData.whisker = s;
+    }
+    boxIn(head, 0.5, 0.18, 0.5, gold, -0.2, 0.42, 0);           // mane
+    const segs = [];
+    for (let i = 0; i < 16; i++) {
+      const sg = new T.Group();
+      const k = 1 - i / 22;
+      boxIn(sg, 0.62, 0.52 * k, 0.52 * k, red, 0, 0, 0);
+      boxIn(sg, 0.5, 0.12, 0.42 * k, gold, 0, -0.27 * k, 0);    // belly
+      const fin = add(sg, new T.ConeGeometry(0.1 * k + 0.03, 0.3, 4), gold, 0, 0.32 * k + 0.08, 0);
+      fin.rotation.z = 0.5;
+      if (i === 4 || i === 11) for (const s of [-1, 1]) boxIn(sg, 0.12, 0.42, 0.12, gold, 0, -0.35, s * 0.25); // little legs
+      g.add(sg);
+      segs.push(sg);
+    }
+    const tail = new T.Group();
+    add(tail, new T.ConeGeometry(0.3, 0.7, 4), gold, -0.3, 0, 0).rotation.z = Math.PI / 2;
+    g.add(tail);
+    segs.push(tail);
+    g.userData = { head, segs };
+    g.scale.setScalar(1.35);
+    return g;
+  }
+  // Fly: the head at x, the body snaking behind it.
+  function animDragon(d, x, y, z, t) {
+    const { head, segs } = d.userData;
+    const sc = d.scale.x;
+    const wave = (i) => Math.sin(t * 6 - i * 0.55);
+    head.position.set(0, wave(0) * 0.45, Math.cos(t * 3) * 0.3);
+    head.rotation.z = Math.cos(t * 6) * 0.15;
+    segs.forEach((s, i) => {
+      s.position.set(-0.6 * (i + 1) - 0.1, wave(i + 1) * 0.5, Math.cos(t * 3 - (i + 1) * 0.35) * 0.45);
+      s.rotation.z = Math.cos(t * 6 - (i + 1) * 0.55) * 0.35;
+    });
+    d.position.set(x, y, z);
+    void sc;
+  }
+
   // ---------------------------------------------------------------- drawn icons
 
   const iconCache = {};
@@ -7421,7 +7772,7 @@ window.TK_TIPS = {
     return out;
   }
 
-  window.TKModels = { buildHero, buildEnemy, enemyLook, makeWeapon, setLevel, makeHorse, animHorse, iconTexture, iconURL, snapFaces, addExtras };
+  window.TKModels = { buildHero, buildEnemy, enemyLook, makeWeapon, setLevel, makeHorse, animHorse, makeDragon, animDragon, iconTexture, iconURL, snapFaces, addExtras };
 })();
 
 </script>
@@ -7583,6 +7934,12 @@ window.TK_TIPS = {
       flag.visible = false;
       v.p.armL.add(flag);
       v.flag = flag;
+      const ice = new T.Mesh(new T.BoxGeometry(1.15, 2.35, 1.0), new T.MeshStandardMaterial({ color: '#bff0ff', transparent: true, opacity: 0.5, roughness: 0.15, metalness: 0.1, emissive: '#5ad0ff', emissiveIntensity: 0.25, depthWrite: false }));
+      ice.position.y = 1.15;
+      ice.renderOrder = 4;
+      ice.visible = false;
+      v.p.root.add(ice);
+      v.ice = ice;
       v.cloth = cloth;
     } else {
       v.ball = spriteOf('🏀', 0.72);
@@ -7607,7 +7964,7 @@ window.TK_TIPS = {
 
   function dropView(v) {
     scene.remove(v.p.root, v.shadow, v.dizzy);
-    for (const k of ['excl', 'bar', 'ball', 'tag', 'horse']) if (v[k]) scene.remove(v[k]);
+    for (const k of ['excl', 'bar', 'ball', 'tag', 'horse', 'scrollSpr']) if (v[k]) scene.remove(v[k]);
   }
 
   function syncFighter(f, dt) {
@@ -7641,7 +7998,8 @@ window.TK_TIPS = {
       if (hints.face === 'cam' && f.who === 'tommy' && Math.random() < dt * 3) Fx.floatUp(Math.random() < 0.5 ? '✌️' : '⭐', f.x + (Math.random() - 0.5), 2.4, f.z, 0.5);
     } else {
       v.shotDone = false;
-      hints = Poses.apply(p, f, clock, dt, W);
+      // frozen in a block of ice: hold still (keep the last pose)
+      hints = f.frozen > 0 ? {} : Poses.apply(p, f, clock, dt, W);
     }
     // turn to face (quickly)
     let d = target - v.angle;
@@ -7694,7 +8052,24 @@ window.TK_TIPS = {
       v.dizzy.position.set(tmpA.x, tmpA.y + 0.55 * s, tmpA.z);
       v.orbit.forEach((o, i) => { const a = clock * 3.2 + (i * PI) / 2; o.position.set(Math.cos(a) * 0.5 * s, Math.sin(a * 2) * 0.05, Math.sin(a) * 0.5 * s); });
     }
+    if (f.kind !== 'enemy') {
+      const reading = f.state === 'special' && f.special === 'scroll' && R.SCROLLS[f.scrollKind];
+      if (reading && !v.scrollSpr) {
+        v.scrollSpr = spriteOf('📜', 0.9);
+        v.scrollSpr.renderOrder = 13;
+        scene.add(v.scrollSpr);
+      }
+      if (v.scrollSpr) {
+        v.scrollSpr.visible = !!reading;
+        if (reading) {
+          if (v.scrollKind !== f.scrollKind) { v.scrollKind = f.scrollKind; v.scrollSpr.material.map = M.iconTexture(R.SCROLLS[f.scrollKind].icon); }
+          v.scrollSpr.position.set(f.x, f.y + lift + 2.9 * s + Math.sin(clock * 6) * 0.08, f.z);
+          v.scrollSpr.scale.setScalar(0.9 + Math.min(1, f.st * 3) * 0.5);
+        }
+      }
+    }
     if (f.kind === 'enemy') {
+      v.ice.visible = f.frozen > 0;
       v.excl.visible = f.state === 'windup';
       if (v.excl.visible) {
         v.excl.position.set(f.x, f.y + 2.45 * s + Math.abs(Math.sin(clock * 12)) * 0.12, f.z);
@@ -7758,7 +8133,12 @@ window.TK_TIPS = {
           v.obj.rotation.y = (it.face || 1) > 0 ? -PI / 2 : PI / 2;
           v.horse = true;
         } else {
-          const icon = food ? food.icon : coin ? coin.icon : it.kind === 'up' ? '⚔️' : '🔮';
+          const icon = food ? food.icon : coin ? coin.icon : it.kind === 'up' ? '⚔️' : it.kind === 'scroll' ? '📜' : '🔮';
+          if (it.kind === 'scroll' && R.SCROLLS[it.scroll]) {
+            const badge = spriteOf(R.SCROLLS[it.scroll].icon, 0.42);
+            badge.position.set(0.25, 0.85, 0.05);
+            v.g.add(badge);
+          }
           v.obj = spriteOf(icon, coin ? (it.kind === 'ingot' ? 0.6 : 0.42) : 0.75);
           v.obj.position.y = coin ? 0.25 : 0.45;
           if (!coin) {
@@ -7807,9 +8187,15 @@ window.TK_TIPS = {
     // thrown things and rolling magic
     const seenS = new Set();
     for (const s of W.shots) {
-      if (s.kind === 'ring') continue;
+      if (s.kind === 'ring' || s.kind === 'strikes' || s.kind === 'whirl') continue;
       seenS.add(s.id);
       let v = shotViews.get(s.id);
+      if (s.style === 'dragon') {
+        if (!v) { v = M.makeDragon(); scene.add(v); shotViews.set(s.id, v); }
+        M.animDragon(v, s.x, 2.3, s.z + 0.5, clock);
+        if (Math.random() < 0.6) Fx.floatUp(Math.random() < 0.5 ? '✨' : '🔥', s.x - 2 - Math.random() * 6, 1.6 + Math.random() * 1.6, s.z + 0.5, 0.45);
+        continue;
+      }
       if (!v) {
         if (s.kind === 'sweep') {
           const icon = s.style === 'wind' ? '🌪️' : s.style === 'dart' ? '🎯' : '🌙';
@@ -7976,6 +8362,14 @@ window.TK_TIPS = {
       setText(c.querySelector('.coins'), 'coins' + i, `🪙 ${h.coins}`);
       setText(c.querySelector('.orbs'), 'orbs' + i, `🔮 ${h.orbs}`);
       setText(c.querySelector('.wlv'), 'wlv' + i, '⚔️' + '★'.repeat(h.wlv));
+      const icons = (h.scrolls || []).map((k) => R.SCROLLS[k].icon).join('');
+      setText(c.querySelector('.scr'), 'scr' + i, '📜' + icons);
+      c.querySelector('.scr').classList.toggle('none', !icons);
+      document.querySelectorAll(`.c${i} .tbtn.scr`).forEach((b) => {
+        b.classList.toggle('none', !icons);
+        const se = b.querySelector('.se'), want = icons ? R.SCROLLS[h.scrolls[0]].icon : '📜';
+        if (se.textContent !== want) se.textContent = want;
+      });
       const hc = c.querySelector('.horse');
       const calling = W.items.some((it) => it.kind === 'horse' && it.coming && it.owner === h.id);
       hc.classList.toggle('riding', !!h.horse);
@@ -8247,6 +8641,54 @@ window.TK_TIPS = {
           popBud();
           break;
         case 'buddyHop': addRunaway(e.x, e.z, -1, true); break;
+        // the magic scrolls
+        case 'scrollGet': {
+          const name = R.SCROLLS[e.kind].name;
+          toast(e.from ? `${name} FROM ${heroName(e.from)}!` : `${name}!`, 'save', e.icon);
+          const h = heroOf(e.who);
+          if (h) Fx.floatUp(e.icon, h.x, 2.6, h.z, 0.7);
+          sfx('pickup');
+          if (!W.scrollTip) { W.scrollTip = true; showTip('scroll'); }
+          break;
+        }
+        case 'scroll':
+          banner(e.name, 'small', 1.1, `${e.icon} ${e.icon} ${e.icon}`);
+          Fx.floatUp(e.icon, e.x, 3.2, e.z, 1.0);
+          sfx('scrollOpen');
+          break;
+        case 'scrollCast': if (e.kind === 'dragon') { sfx('roar'); shake = Math.max(shake, 1.2); } break;
+        case 'thunderStrike':
+          e.hits.forEach((p, i) => Fx.bolt(p.x, p.z, i * 0.04));
+          sfx('thunder');
+          shake = Math.max(shake, e.last ? 1 : 0.5);
+          break;
+        case 'freeze':
+          e.hits.forEach((p) => Fx.pow(p.x, 2.4, p.z, 'FREEZE!', false));
+          sfx('ice');
+          break;
+        case 'shatter': Fx.poof(e.x, 1.0, e.z, 0.9); Fx.pow(e.x, 1.6, e.z, 'CRACK!', true); sfx('jar'); break;
+        case 'thaw': Fx.poof(e.x, 1.0, e.z, 0.6); break;
+        case 'whirl': Fx.tornado(e.x, e.z, e.dur); sfx('gale'); break;
+        case 'whirlBlast':
+          Fx.ring(e.x, e.z, W.halfW, 12, 'wind', 1.6);
+          Fx.dust(e.x, e.z, 16, true);
+          sfx('blast');
+          shake = Math.max(shake, 1);
+          break;
+        case 'treasure':
+          Fx.confetti(e.x, 6, -0.5, 50);
+          e.hits.forEach((p) => Fx.floatUp('💫', p.x, 2.5, p.z, 0.6));
+          W.heroes.forEach((h) => { if (!h.out) Fx.floatUp('💖', h.x, 2.6, h.z, 0.8); });
+          sfx('treasure');
+          break;
+        case 'gift': {
+          const G2 = { orb: ['🔮', 'MAGIC ORB'], up: ['⚔️', 'WEAPON UP'], coins: ['💰', 'BAG OF COINS'] }[e.kind] || ['🎁', 'PRESENT'];
+          const h = W.heroes[0];
+          Fx.arc(G2[0], { x: e.x, y: 1.8, z: e.z }, { x: h.x, y: 1.8, z: h.z }, 0.5, 0.8, 1.2);
+          toast(`${G2[1]} FROM ${heroName(e.who)}!`, 'save', G2[0]);
+          sfx('level');
+          break;
+        }
         case 'buddyMount':
           if (clock > (rideToastT || 0)) { rideToastT = clock + 4; toast(`${heroName(e.who)} RIDES TOO!`, 'save', '🐎'); }
           sfx('neigh');
@@ -8849,6 +9291,7 @@ Kit.help.setup({
     ['dash', 'double-tap A or D', 'double-tap ← or →'],
     ['walk into a soldier to grab him, swing to toss him', 'F', 'J'],
     ['call a horse (walk to it to ride, jump to hop off)', 'R', 'O'],
+    ['read a magic scroll (from chests, or your brother brings one)', 'E', 'U'],
     ['on a horse: swing next to a soldier to scoop him up, swing again to fling him', 'F', 'J'],
     ['call your brother · team-up', 'T', 'Enter'],
     ['pause · sound', 'P or Esc · M', ''],
@@ -8902,6 +9345,11 @@ Kit.help.setup({
     'BAO BUN': '包子', DRUMSTICK: '鸡腿', 'LONGEVITY PEACH': '寿桃', 'ICE CREAM': '冰淇淋', WATER: '水',
     'JUICE BOX': '果汁', COOKIE: '饼干', WATERMELON: '西瓜', BANANA: '香蕉',
   };
+  const SCROLL = {
+    'DRAGON SCROLL': '神龙卷轴', 'THUNDER SCROLL': '雷霆卷轴', 'ICE SCROLL': '冰冻卷轴', 'WHIRLWIND SCROLL': '旋风卷轴',
+    'TREASURE SCROLL': '聚宝卷轴',
+  };
+  const GIFT = { 'MAGIC ORB': '法术宝珠', 'WEAPON UP': '武器升级', 'BAG OF COINS': '一袋金币', PRESENT: '礼物' };
   const STORY = {
     'Under the peach blossoms, three heroes promised to look after each other and help everyone. Teddy and Tommy want to be heroes too! First, some practice with the silly straw-hat soldiers.':
       '在开满桃花的园子里，三位英雄约好要互相照顾，还要帮助大家。Teddy 和 Tommy 也想当英雄！先和搞笑的草帽兵练练手吧。',
@@ -8935,6 +9383,8 @@ Kit.help.setup({
     'Player 1: W A S D and F. Player 2: the arrows and J.': '1 号玩家：W A S D 和 F。2 号玩家：方向键和 J。',
     'Each player has a joystick and ⚔️ to swing!': '每个玩家都有一个摇杆和 ⚔️ 按钮！',
     'H or L = magic! It uses a 🔮. T = TEAM-UP!': 'H 或 L = 法术！会用掉一个 🔮。T = 合体必杀！',
+    'A magic scroll! Press E to read it: it does something to every soldier on the screen.': '魔法卷轴！按 E 打开它：屏幕上所有士兵都会中招！',
+    'A magic scroll! Tap 📜 to read it: it does something to every soldier on the screen.': '魔法卷轴！点 📜 打开它：屏幕上所有士兵都会中招！',
     'Tap ✨ for magic! It uses a 🔮. Tap TEAM-UP when it glows!': '点 ✨ 放法术！会用掉一个 🔮。合体按钮亮了就点它！',
   };
   // the comic bursts (drawn on canvases through Kit.lang.t)
@@ -8945,9 +9395,10 @@ Kit.help.setup({
     'SAVED!': '救啦！', 'POOF!': '噗！', 'BEEP!': '哔！', 'BOINK!': '啵嘤！', 'POKE!': '戳！', 'SWISH!': '唰！', 'FWIP!': '嗖！',
     'CLANG!': '当！', 'WHIRL!': '转转转！', 'CLIP-CLOP!': '嘚嘚！', 'ZAP!': '噼啪！', 'FWOOSH!': '呼啦！', 'THWIP!': '嗖嗖！',
     'SHING!': '锵！', 'WHOA!': '哇啊！', 'CRACK!': '咔嚓！', 'PERFECT!': '完美！', 'LEVEL UP!': '升级！',
-    'BUMP!': '颠一下！', 'GOTCHA!': '抓到啦！', 'NEIGH!': '咴——！',
+    'BUMP!': '颠一下！', 'GOTCHA!': '抓到啦！', 'NEIGH!': '咴——！', 'ROAR!': '吼——！', 'FREEZE!': '冻住！',
   };
-  [STAGE, BOSS, BOSS_LINE, HERO, MAGIC, FOOD, STORY, TIP, BURST].forEach((d) => L.add(d));
+  [STAGE, BOSS, BOSS_LINE, HERO, MAGIC, FOOD, SCROLL, STORY, TIP, BURST].forEach((d) => L.add(d));
+  Object.entries(SCROLL).forEach(([en, zh]) => L.add({ [en + '!']: zh + '！' }));
 
   L.add({
     // title
@@ -8987,6 +9438,8 @@ Kit.help.setup({
     '🛡️ saves': '🛡️ 保护', '🤜🤛 team-ups': '🤜🤛 合体必杀',
     // touch buttons
     'MAGIC': '法术', 'JUMP': '跳', 'SWING': '挥', 'HORSE': '叫马', 'call a horse': '叫一匹马', 'HERE COMES A HORSE!': '马儿来啦！',
+    'SCROLL': '卷轴', 'read a magic scroll': '打开魔法卷轴',
+    'read a magic scroll (from chests, or your brother brings one)': '打开魔法卷轴（宝箱里有，兄弟也会带来）',
     // the ? panel
     'Player 1': '1 号玩家', 'Player 2': '2 号玩家', 'swing your weapon': '挥武器', 'jump (jump + swing = flying kick)': '跳（跳 + 挥 = 飞踢）',
     'magic (uses a 🔮)': '法术（用一个 🔮）', 'rescue spin, or the horse stomp when riding (costs a heart)': '救命旋风，骑马时是战马踏地（用一颗心）',
@@ -9011,7 +9464,8 @@ Kit.help.setup({
   L.rule(/^(\w+) RIDES TOO!$/, (m, w) => `${name(w)} 也骑上马啦！`);
   L.rule(/^(\w+) IS OUT!$/, (m, w) => `${name(w)} 出局了！`);
   L.rule(/^BYE! (.+)$/, '拜拜！$1');
-  L.rule(/^(.+) FROM (\w+)!$/, (m, item, w) => `${name(w)} 送来的${tr(FOOD, item)}！`);
+  const THINGS = Object.assign({}, FOOD, SCROLL, GIFT);
+  L.rule(/^(.+) FROM (\w+)!$/, (m, item, w) => `${name(w)} 送来的${tr(THINGS, item)}！`);
   L.rule(/^(.+)! \+(\d+) ❤️$/, (m, item, n) => `${tr(FOOD, item)}！+${n} ❤️`);
   L.rule(/^WEAPON UP! (★+)$/, '武器升级！$1');
   L.rule(/^OUT · tap ⚔️$/, '出局 · 点 ⚔️');

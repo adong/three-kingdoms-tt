@@ -320,6 +320,66 @@
     h.userData.head.rotation.x = Math.sin(phase) * 0.06 * (amp > 0.1 ? 1 : 0.3);
   }
 
+  // ---------------------------------------------------------------- the scroll dragon
+
+  // A long red-and-gold Chinese dragon made of segments, flying toward +x (left to right across the screen).
+  function makeDragon() {
+    const g = new T.Group();
+    const red = m('#d8302a', { emissive: '#5a0a0a', emissiveIntensity: 0.35 });
+    const gold = m('#ffd23a', { metalness: 0.4, roughness: 0.4, emissive: '#7a5a00', emissiveIntensity: 0.35 });
+    const white = m('#fff8e8', { emissive: '#ffffff', emissiveIntensity: 0.3 }), dark = m('#14121f');
+    const head = new T.Group();
+    g.add(head);
+    boxIn(head, 0.95, 0.62, 0.72, red, 0.25, 0.05, 0);          // skull
+    boxIn(head, 0.75, 0.32, 0.62, red, 0.85, 0.12, 0);          // snout
+    boxIn(head, 0.7, 0.16, 0.56, gold, 0.8, -0.22, 0);          // open jaw
+    boxIn(head, 0.12, 0.1, 0.5, white, 1.12, -0.06, 0);         // teeth
+    for (const s of [-1, 1]) {
+      boxIn(head, 0.16, 0.16, 0.06, white, 0.45, 0.22, s * 0.37); // eyes
+      boxIn(head, 0.08, 0.1, 0.07, dark, 0.49, 0.21, s * 0.4);
+      const horn = add(head, new T.ConeGeometry(0.08, 0.6, 6), gold, -0.05, 0.5, s * 0.2);
+      horn.rotation.z = 0.9;
+      const wh = boxIn(head, 0.9, 0.04, 0.04, gold, 0.65, 0.0, s * 0.42); // whiskers
+      wh.rotation.y = s * 0.3;
+      wh.rotation.z = -0.2;
+      wh.userData.whisker = s;
+    }
+    boxIn(head, 0.5, 0.18, 0.5, gold, -0.2, 0.42, 0);           // mane
+    const segs = [];
+    for (let i = 0; i < 16; i++) {
+      const sg = new T.Group();
+      const k = 1 - i / 22;
+      boxIn(sg, 0.62, 0.52 * k, 0.52 * k, red, 0, 0, 0);
+      boxIn(sg, 0.5, 0.12, 0.42 * k, gold, 0, -0.27 * k, 0);    // belly
+      const fin = add(sg, new T.ConeGeometry(0.1 * k + 0.03, 0.3, 4), gold, 0, 0.32 * k + 0.08, 0);
+      fin.rotation.z = 0.5;
+      if (i === 4 || i === 11) for (const s of [-1, 1]) boxIn(sg, 0.12, 0.42, 0.12, gold, 0, -0.35, s * 0.25); // little legs
+      g.add(sg);
+      segs.push(sg);
+    }
+    const tail = new T.Group();
+    add(tail, new T.ConeGeometry(0.3, 0.7, 4), gold, -0.3, 0, 0).rotation.z = Math.PI / 2;
+    g.add(tail);
+    segs.push(tail);
+    g.userData = { head, segs };
+    g.scale.setScalar(1.35);
+    return g;
+  }
+  // Fly: the head at x, the body snaking behind it.
+  function animDragon(d, x, y, z, t) {
+    const { head, segs } = d.userData;
+    const sc = d.scale.x;
+    const wave = (i) => Math.sin(t * 6 - i * 0.55);
+    head.position.set(0, wave(0) * 0.45, Math.cos(t * 3) * 0.3);
+    head.rotation.z = Math.cos(t * 6) * 0.15;
+    segs.forEach((s, i) => {
+      s.position.set(-0.6 * (i + 1) - 0.1, wave(i + 1) * 0.5, Math.cos(t * 3 - (i + 1) * 0.35) * 0.45);
+      s.rotation.z = Math.cos(t * 6 - (i + 1) * 0.55) * 0.35;
+    });
+    d.position.set(x, y, z);
+    void sc;
+  }
+
   // ---------------------------------------------------------------- drawn icons
 
   const iconCache = {};
@@ -396,5 +456,5 @@
     return out;
   }
 
-  window.TKModels = { buildHero, buildEnemy, enemyLook, makeWeapon, setLevel, makeHorse, animHorse, iconTexture, iconURL, snapFaces, addExtras };
+  window.TKModels = { buildHero, buildEnemy, enemyLook, makeWeapon, setLevel, makeHorse, animHorse, makeDragon, animDragon, iconTexture, iconURL, snapFaces, addExtras };
 })();

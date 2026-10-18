@@ -104,7 +104,7 @@
             const notes = [];
             if (s.call && s.mode === '1p') notes.push(`buddy x${r.seen.buddy}, treats ${r.seen.treats}, saves ${r.stats.saves}`);
             if (s.call && s.mode === '2p') notes.push(`team-ups ${r.stats.teamups}`);
-            notes.push(`magic ${r.stats.specials}, rescue ${r.stats.rescues}, ouch ${r.stats.ouch}, coins ${r.coins}, rides ${r.stats.rides}` + (s.horse ? `, horses called ${r.stats.horseCalls}` : ''));
+            notes.push(`magic ${r.stats.specials}, rescue ${r.stats.rescues}, scrolls ${r.stats.scrolls || 0}, ouch ${r.stats.ouch}, coins ${r.coins}, rides ${r.stats.rides}` + (s.horse ? `, horses called ${r.stats.horseCalls}` : ''));
             log(pad(r.stage + (seed !== seeds[0] ? ` #${seed}` : ''), 14) + pad(s.name, 26) + pad(r.ok ? 'CLEAR' : 'FAIL', 7) +
               pad(r.time.toFixed(0) + 's', 7) + pad(r.stats.kos, 5) + pad(r.stats.deaths, 4) + pad(r.continues, 4) + notes.join(', '));
           }
@@ -343,6 +343,46 @@
     ok('calling again (as often as you like) gives another treat each time', W.stats.treats >= 3, `treats ${W.stats.treats}`);
     W = fresh({ hero: 'luna' }); step(W, { call: true }); step(W, {}, 5);
     ok("a friend's companion is Tommy; Tommy's is Teddy", W.buddy && W.buddy.who === 'tommy' && S.buddyFor('tommy') === 'teddy');
+
+    // magic scrolls: in chests, carried (up to 3), each one hits every soldier in the window its own way
+    W = fresh(); W.crates.push({ id: 998, x: W.heroes[0].x + 1.2, z: 0, drop: 'scroll:ice', look: 'chest' });
+    step(W, { attack: true }); step(W, {}, 50); step(W, { mx: 1 }, 30);
+    ok('a chest can hold a magic scroll; walk over it to carry it', W.heroes[0].scrolls.join() === 'ice', W.heroes[0].scrolls.join());
+    W = fresh(); for (let k = 0; k < 4; k++) { S.spawnItem(W, 'scroll', W.heroes[0].x + 0.4, 0, false).scroll = 'gold'; step(W, { mx: 0.2 }, 6); }
+    ok(`you carry up to ${window.TK_RULES.SCROLL_MAX} scrolls (a 4th turns into coins)`, W.heroes[0].scrolls.length === window.TK_RULES.SCROLL_MAX, `carrying ${W.heroes[0].scrolls.length}`);
+    const scrollRun = (kind, frames, horse) => {
+      const W = fresh(); const h = W.heroes[0]; h.scrolls = [kind]; h.hp = 2; h.x = W.cam.x - 3;
+      if (horse) h.horse = true;
+      const soldiers = [foe(W, 'straw', 2), foe(W, 'bot', 6, -1.0), foe(W, 'turban', 8.5, 1.0)];
+      const gen = S.spawnEnemy(W, 'sergeant', 1); gen.x = h.x + 4.5; gen.z = 0.4; gen.state = 'idle'; gen.ai.cool = 999;
+      step(W, { scroll: true }); step(W, {}, frames);
+      return { W, h, soldiers, gen };
+    };
+    let r = scrollRun('dragon', 150);
+    ok('🐉 dragon scroll: a dragon flies across and every soldier is beaten; the general loses a quarter', r.soldiers.every((x) => x.ko || x.gone) && Math.abs(r.gen.hp - r.gen.maxHp * 0.75) < 1 && !r.h.scrolls.length, r.soldiers.map((x) => x.state).join() + ` general ${Math.round(r.gen.hp)}/${r.gen.maxHp}`);
+    r = scrollRun('thunder', 90);
+    ok('⚡ thunder scroll: three strikes on every soldier, the last one knocks them down', r.W.events.filter((x) => x.type === 'thunderStrike').length === 3 && r.soldiers.every((x) => x.state !== 'idle' && x.hp < x.maxHp) && r.gen.hp < r.gen.maxHp, r.soldiers.map((x) => x.state).join());
+    r = scrollRun('ice', 60);
+    const frozen = r.soldiers.every((x) => x.frozen > 0 && x.state === 'idle') && r.gen.frozen > 0;
+    const before = r.soldiers[0].hp; r.soldiers[0].frozen = 3;
+    S.damageEnemy(r.W, r.soldiers[0], 3, { by: r.h });
+    ok('❄️ ice scroll: every soldier and the general frozen still; hits on them do double', frozen && before - r.soldiers[0].hp === 6, `frozen ${frozen}, dmg ${before - r.soldiers[0].hp}`);
+    r = scrollRun('wind', 50);
+    const zc = (r.W.zMin + r.W.zMax) / 2, mid = r.W.cam.x;
+    const pulled = r.soldiers.every((x) => Math.abs(x.x - mid) < 3 && Math.abs(x.z - zc) < 1.2);
+    step(r.W, {}, 60);
+    ok('🌪️ whirlwind scroll: everyone is pulled into the middle, then knocked down', pulled && r.soldiers.every((x) => x.state !== 'idle' && x.hp < x.maxHp), `pulled ${pulled}, ${r.soldiers.map((x) => x.state).join()}`);
+    r = scrollRun('gold', 40);
+    ok('💰 treasure scroll: all your hearts back, coins rain down, the soldiers are dazzled', r.h.hp === r.h.maxHp && r.soldiers.every((x) => x.state === 'hurt') && r.W.items.filter((i) => window.TK_RULES.COINS[i.kind]).length >= 16, `hp ${r.h.hp}, ${r.soldiers.map((x) => x.state).join()}`);
+    r = scrollRun('dragon', 150, true);
+    ok('read a scroll on a horse: you stay in the saddle', r.h.horse && r.soldiers.every((x) => x.ko || x.gone), `horse ${r.h.horse}`);
+    // your brother brings a freebie each visit (a scroll first), not for calling again while he's here
+    W = fresh(); step(W, { call: true }); step(W, {}, 200);
+    const firstGift = W.heroes[0].scrolls.length === 1;
+    step(W, { call: true }); step(W, {}, 120);
+    const once = W.stats.gifts === 1;
+    W.buddyT = 0; step(W, {}, 300); step(W, { call: true }); step(W, {}, 200);
+    ok('calling your brother brings a freebie each visit: a scroll first, then a 🔮, a weapon upgrade...', firstGift && once && W.stats.gifts === 2 && W.heroes[0].orbs === W.diff.orbs + 1, `first ${firstGift}, once ${once}, gifts ${W.stats.gifts}, orbs ${W.heroes[0].orbs}`);
 
     // team-up (2P): every regular soldier on screen is bonked
     W = fresh({ mode: '2p' });

@@ -235,6 +235,12 @@
         break;
       case 'special': case 'team': {
         const who = f.who;
+        if (f.state === 'special' && f.special === 'scroll') {
+          // holding the magic scroll up high with both hands
+          Object.assign(T, { la: 2.95, ra: 2.95, laz: -0.25, raz: 0.25, lean: 0.12, head: -0.35, ll: 0.3, rl: -0.2 });
+          k = K.fast;
+          break;
+        }
         if (f.state === 'special' && f.special === 'rear') {
           // the horse rears up: hold on and cheer, then lean in for the stomp
           if (st < 0.42) Object.assign(T, { la: 2.8, ra: 2.9, laz: -0.3, raz: 0.3, lean: 0.25, head: -0.3 });

@@ -122,6 +122,7 @@
     crescent: { len: 0.85, at: 0.3, speed: 9, dmg: 24, width: 0.9, zHalf: 1.7 },               // a giant moon-shaped wave rolls forward
     rescue:   { len: 0.6, at: 0.14, radius: 2.5, speed: 11, dmg: 12 },                         // the spin when you're surrounded
     rear:     { len: 0.75, at: 0.42, radius: 2.9, speed: 11, dmg: 14 },                         // the same on a horse: it rears up and stomps
+    scroll:   { len: 0.9, at: 0.35 },                                                           // holding up a magic scroll (SCROLLS below)
   };
 
   // ---------------------------------------------------------------- the straw-hat army
@@ -246,7 +247,23 @@
     treatHeal: 2,      // hearts a treat gives back
     power: 0.7,        // his hits are this strong compared with yours
     helloRadius: 2.6,  // his hello move bonks anyone this close
+    // a freebie on top of the treat, once per visit (not for calling again while he's still here), in this order
+    gifts: ['scroll', 'orb', 'up', 'scroll', 'coins'],
   };
+
+  // ---------------------------------------------------------------- magic scrolls
+
+  // Found in chests and brought by your brother. E (U for player 2, 📜 on touch) reads the next one you carry
+  // (up to `max`). Each one does something to every soldier on the screen.
+  const SCROLLS = {
+    dragon:  { name: 'DRAGON SCROLL', icon: '🐉', speed: 11, dmg: 999, boss: 0.25 },        // a dragon flies across: everyone beaten
+    thunder: { name: 'THUNDER SCROLL', icon: '⚡', strikes: 3, every: 0.3, dmg: 14, boss: 0.18 }, // 3 lightning strikes on everyone
+    ice:     { name: 'ICE SCROLL', icon: '❄️', time: 5, bossTime: 3, mult: 2 },              // frozen solid; your hits do double
+    wind:    { name: 'WHIRLWIND SCROLL', icon: '🌪️', pull: 1.4, pullSpeed: 5, dmg: 20, boss: 0.15 }, // pulled in, spun up, dropped
+    gold:    { name: 'TREASURE SCROLL', icon: '💰', coins: 16, stun: 2.5, orbs: 1 },         // hearts and 🔮 for you, coins rain, they're dazzled
+  };
+  const SCROLL_ORDER = ['dragon', 'thunder', 'ice', 'wind', 'gold'];
+  const SCROLL_MAX = 3;
 
   // ---------------------------------------------------------------- difficulty
 
@@ -263,5 +280,5 @@
     },
   };
 
-  window.TK_RULES = { WORLD, MOVES, WEAPON_LEVEL, HEROES, HERO_ORDER, SPECIALS, ENEMIES, BOSSES, SHOTS, FOOD, COINS, CHEST, HORSE, TREATS, BUDDY, DIFF };
+  window.TK_RULES = { WORLD, MOVES, WEAPON_LEVEL, HEROES, HERO_ORDER, SPECIALS, ENEMIES, BOSSES, SHOTS, FOOD, COINS, CHEST, HORSE, TREATS, BUDDY, SCROLLS, SCROLL_ORDER, SCROLL_MAX, DIFF };
 })();

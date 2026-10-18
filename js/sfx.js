@@ -43,6 +43,16 @@
       S().tone({ f: 260, to: 120, dur: 0.1, vol: 0.18 });
     },
     coin() { S().coin(1); },
+    // the scrolls
+    scrollOpen() { S().hiss({ filter: 'bandpass', f: 1800, to: 900, q: 1, dur: 0.35, vol: 0.12 }); [784, 988, 1175].forEach((f, i) => S().tone({ type: 'triangle', f, dur: 0.18, vol: 0.08, at: 0.1 + i * 0.07 })); },
+    roar() {
+      S().tone({ type: 'sawtooth', f: 90, to: 60, dur: 1.1, vol: 0.18, lp: 600 });
+      S().tone({ type: 'sawtooth', f: 140, to: 95, dur: 0.9, vol: 0.1, lp: 900, at: 0.05 });
+      S().hiss({ filter: 'lowpass', f: 900, to: 300, dur: 1.0, vol: 0.25, attack: 0.1 });
+      sfx.gong();
+    },
+    ice() { [1568, 2093, 2637, 3136, 2349].forEach((f, i) => S().tone({ type: 'sine', f, dur: 0.25, vol: 0.06, at: i * 0.05 })); S().hiss({ filter: 'highpass', f: 5000, dur: 0.4, vol: 0.08 }); },
+    treasure() { for (let i = 0; i < 8; i++) S().coin(1 + (i % 3)); sfx.tune(); },
     thunder() {
       S().hiss({ filter: 'lowpass', f: 3000, to: 120, dur: 0.9, vol: 0.45 });
       S().tone({ f: 70, to: 35, dur: 0.8, vol: 0.4 });

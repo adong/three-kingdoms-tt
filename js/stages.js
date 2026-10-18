@@ -268,6 +268,11 @@ window.TK_STAGES = [
   },
 ];
 
+// Every stage hides a magic scroll in a chest at its third stop (which scroll is a surprise).
+window.TK_STAGES.forEach((s) => {
+  if (!s.bonus && s.sections[2]) (s.sections[2].chests = s.sections[2].chests || []).push({ x: 0.6, z: -2.2, drop: 'scroll' });
+});
+
 // The first stage teaches the moves: what each tip says, with keys or on a touch screen.
 window.TK_TIPS = {
   move:  { keys: 'Walk with W A S D. Swing your weapon with F!', touch: 'Walk with the joystick. Tap ⚔️ to swing!' },
@@ -276,6 +281,7 @@ window.TK_TIPS = {
   magic: { keys: 'H = magic! It uses a 🔮. Press T to call your brother!', touch: 'Tap ✨ for magic! It uses a 🔮. Tap your brother\'s face to call him!' },
   horse: { keys: 'A horse! Walk to it to ride, G hops off. Press R any time to call one.', touch: 'A horse! Walk to it to ride, ⬆️ hops off. Tap 🐎 any time to call one.' },
   // two players
+  scroll: { keys: 'A magic scroll! Press E to read it: it does something to every soldier on the screen.', touch: 'A magic scroll! Tap 📜 to read it: it does something to every soldier on the screen.' },
   move2:  { keys: 'Player 1: W A S D and F. Player 2: the arrows and J.', touch: 'Each player has a joystick and ⚔️ to swing!' },
   magic2: { keys: 'H or L = magic! It uses a 🔮. T = TEAM-UP!', touch: 'Tap ✨ for magic! It uses a 🔮. Tap TEAM-UP when it glows!' },
 };

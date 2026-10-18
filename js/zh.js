@@ -41,6 +41,11 @@
     'BAO BUN': '包子', DRUMSTICK: '鸡腿', 'LONGEVITY PEACH': '寿桃', 'ICE CREAM': '冰淇淋', WATER: '水',
     'JUICE BOX': '果汁', COOKIE: '饼干', WATERMELON: '西瓜', BANANA: '香蕉',
   };
+  const SCROLL = {
+    'DRAGON SCROLL': '神龙卷轴', 'THUNDER SCROLL': '雷霆卷轴', 'ICE SCROLL': '冰冻卷轴', 'WHIRLWIND SCROLL': '旋风卷轴',
+    'TREASURE SCROLL': '聚宝卷轴',
+  };
+  const GIFT = { 'MAGIC ORB': '法术宝珠', 'WEAPON UP': '武器升级', 'BAG OF COINS': '一袋金币', PRESENT: '礼物' };
   const STORY = {
     'Under the peach blossoms, three heroes promised to look after each other and help everyone. Teddy and Tommy want to be heroes too! First, some practice with the silly straw-hat soldiers.':
       '在开满桃花的园子里，三位英雄约好要互相照顾，还要帮助大家。Teddy 和 Tommy 也想当英雄！先和搞笑的草帽兵练练手吧。',
@@ -74,6 +79,8 @@
     'Player 1: W A S D and F. Player 2: the arrows and J.': '1 号玩家：W A S D 和 F。2 号玩家：方向键和 J。',
     'Each player has a joystick and ⚔️ to swing!': '每个玩家都有一个摇杆和 ⚔️ 按钮！',
     'H or L = magic! It uses a 🔮. T = TEAM-UP!': 'H 或 L = 法术！会用掉一个 🔮。T = 合体必杀！',
+    'A magic scroll! Press E to read it: it does something to every soldier on the screen.': '魔法卷轴！按 E 打开它：屏幕上所有士兵都会中招！',
+    'A magic scroll! Tap 📜 to read it: it does something to every soldier on the screen.': '魔法卷轴！点 📜 打开它：屏幕上所有士兵都会中招！',
     'Tap ✨ for magic! It uses a 🔮. Tap TEAM-UP when it glows!': '点 ✨ 放法术！会用掉一个 🔮。合体按钮亮了就点它！',
   };
   // the comic bursts (drawn on canvases through Kit.lang.t)
@@ -84,9 +91,10 @@
     'SAVED!': '救啦！', 'POOF!': '噗！', 'BEEP!': '哔！', 'BOINK!': '啵嘤！', 'POKE!': '戳！', 'SWISH!': '唰！', 'FWIP!': '嗖！',
     'CLANG!': '当！', 'WHIRL!': '转转转！', 'CLIP-CLOP!': '嘚嘚！', 'ZAP!': '噼啪！', 'FWOOSH!': '呼啦！', 'THWIP!': '嗖嗖！',
     'SHING!': '锵！', 'WHOA!': '哇啊！', 'CRACK!': '咔嚓！', 'PERFECT!': '完美！', 'LEVEL UP!': '升级！',
-    'BUMP!': '颠一下！', 'GOTCHA!': '抓到啦！', 'NEIGH!': '咴——！',
+    'BUMP!': '颠一下！', 'GOTCHA!': '抓到啦！', 'NEIGH!': '咴——！', 'ROAR!': '吼——！', 'FREEZE!': '冻住！',
   };
-  [STAGE, BOSS, BOSS_LINE, HERO, MAGIC, FOOD, STORY, TIP, BURST].forEach((d) => L.add(d));
+  [STAGE, BOSS, BOSS_LINE, HERO, MAGIC, FOOD, SCROLL, STORY, TIP, BURST].forEach((d) => L.add(d));
+  Object.entries(SCROLL).forEach(([en, zh]) => L.add({ [en + '!']: zh + '！' }));
 
   L.add({
     // title
@@ -126,6 +134,8 @@
     '🛡️ saves': '🛡️ 保护', '🤜🤛 team-ups': '🤜🤛 合体必杀',
     // touch buttons
     'MAGIC': '法术', 'JUMP': '跳', 'SWING': '挥', 'HORSE': '叫马', 'call a horse': '叫一匹马', 'HERE COMES A HORSE!': '马儿来啦！',
+    'SCROLL': '卷轴', 'read a magic scroll': '打开魔法卷轴',
+    'read a magic scroll (from chests, or your brother brings one)': '打开魔法卷轴（宝箱里有，兄弟也会带来）',
     // the ? panel
     'Player 1': '1 号玩家', 'Player 2': '2 号玩家', 'swing your weapon': '挥武器', 'jump (jump + swing = flying kick)': '跳（跳 + 挥 = 飞踢）',
     'magic (uses a 🔮)': '法术（用一个 🔮）', 'rescue spin, or the horse stomp when riding (costs a heart)': '救命旋风，骑马时是战马踏地（用一颗心）',
@@ -150,7 +160,8 @@
   L.rule(/^(\w+) RIDES TOO!$/, (m, w) => `${name(w)} 也骑上马啦！`);
   L.rule(/^(\w+) IS OUT!$/, (m, w) => `${name(w)} 出局了！`);
   L.rule(/^BYE! (.+)$/, '拜拜！$1');
-  L.rule(/^(.+) FROM (\w+)!$/, (m, item, w) => `${name(w)} 送来的${tr(FOOD, item)}！`);
+  const THINGS = Object.assign({}, FOOD, SCROLL, GIFT);
+  L.rule(/^(.+) FROM (\w+)!$/, (m, item, w) => `${name(w)} 送来的${tr(THINGS, item)}！`);
   L.rule(/^(.+)! \+(\d+) ❤️$/, (m, item, n) => `${tr(FOOD, item)}！+${n} ❤️`);
   L.rule(/^WEAPON UP! (★+)$/, '武器升级！$1');
   L.rule(/^OUT · tap ⚔️$/, '出局 · 点 ⚔️');
