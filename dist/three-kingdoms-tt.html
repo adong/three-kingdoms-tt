@@ -7269,13 +7269,22 @@ window.TK_TIPS = {
       v.excl.visible = false;
       scene.add(v.excl);
       if (!f.boss) {
+        // a little health bar: white outline, a light track, and a fill that goes green, yellow, red. All three are
+        // "transparent" so they're drawn in renderOrder (Three.js draws solid things first, whatever their order,
+        // which once put the dark track on top of the fill).
         v.bar = new T.Group();
-        const bg = new T.Mesh(new T.PlaneGeometry(0.9, 0.12), new T.MeshBasicMaterial({ color: '#14121f', depthTest: false, transparent: true, opacity: 0.8 }));
-        const fill = new T.Mesh(new T.PlaneGeometry(0.84, 0.07), new T.MeshBasicMaterial({ color: '#ff8a6a', depthTest: false }));
-        fill.geometry.translate(0.42, 0, 0);
-        fill.position.set(-0.42, 0, 0.01);
-        bg.renderOrder = fill.renderOrder = 14;
-        v.bar.add(bg, fill);
+        const layer = (w, h, color, order, opacity = 1) => {
+          const me = new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ color, depthTest: false, depthWrite: false, transparent: true, opacity }));
+          me.renderOrder = order;
+          v.bar.add(me);
+          return me;
+        };
+        layer(1.08, 0.22, '#ffffff', 14);
+        layer(1.0, 0.14, '#6a5a72', 15, 0.9);
+        const fill = layer(1.0, 0.14, '#7dff5a', 16);
+        fill.geometry.translate(0.5, 0, 0);
+        fill.position.x = -0.5;
+        v.bar.rotation.x = -0.45; // tip it toward the camera
         v.barFill = fill;
         v.bar.visible = false;
         scene.add(v.bar);
@@ -7409,7 +7418,9 @@ window.TK_TIPS = {
         v.bar.visible = f.barT > 0 && !f.ko;
         if (v.bar.visible) {
           v.bar.position.set(f.x, f.y + 2.3 * s, f.z);
-          v.barFill.scale.x = Math.max(0.001, f.hp / f.maxHp);
+          const frac = Math.max(0.001, f.hp / f.maxHp);
+          v.barFill.scale.x = frac;
+          v.barFill.material.color.set(frac > 0.5 ? '#7dff5a' : frac > 0.25 ? '#ffd400' : '#ff5a5a');
         }
       }
       v.flag.visible = !!(hints && hints.flag);
