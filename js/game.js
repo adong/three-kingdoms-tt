@@ -329,7 +329,14 @@
       }
       const coin = R.COINS[it.kind];
       v.g.position.set(it.x, it.y + (v.horse || coin ? 0 : Math.sin(clock * 3 + it.id) * 0.06), it.z);
-      if (v.horse) M.animHorse(v.obj, clock * 2 + it.id, 0.15);
+      if (v.horse) {
+        if (it.coming) {
+          v.obj.rotation.y = (it.face || 1) > 0 ? -PI / 2 : PI / 2;
+          v.gallop = (v.gallop || 0) + (1 / 60) * 22;
+          M.animHorse(v.obj, v.gallop, 7);
+          if (Math.random() < 0.25) Fx.dust(it.x - (it.face || 1) * 0.7, it.z, 1);
+        } else M.animHorse(v.obj, clock * 2 + it.id, 0.15);
+      }
       if (coin) v.obj.material.rotation = Math.sin(clock * 8 + it.id) * 0.4;
       v.shadow.position.set(it.x, 0.02, it.z);
       if (v.glow) v.glow.material.opacity = 0.4 + Math.sin(clock * 5) * 0.2;
@@ -522,7 +529,11 @@
       setText(c.querySelector('.coins'), 'coins' + i, `🪙 ${h.coins}`);
       setText(c.querySelector('.orbs'), 'orbs' + i, `🔮 ${h.orbs}`);
       setText(c.querySelector('.wlv'), 'wlv' + i, '⚔️' + '★'.repeat(h.wlv));
-      c.querySelector('.horse').classList.toggle('on', !!h.horse);
+      const hc = c.querySelector('.horse');
+      const calling = W.items.some((it) => it.kind === 'horse' && it.coming && it.owner === h.id);
+      hc.classList.toggle('riding', !!h.horse);
+      hc.classList.toggle('wait', !h.horse && (h.horseCd > 0 || calling));
+      document.querySelectorAll(`.c${i} .hrs`).forEach((b) => b.classList.toggle('wait', !!h.horse || h.horseCd > 0 || calling));
       c.querySelector('.shield').classList.toggle('on', !!h.shield && !h.out);
       const out = c.querySelector('.out');
       out.classList.toggle('on', !!h.out && W.mode === '2p');
@@ -772,6 +783,7 @@
         case 'dismount': sfx('jump'); break;
         case 'park': break;
         case 'horseOff': addRunaway(e.x, e.z, -(e.face || 1), false); sfx('neigh'); break;
+        case 'horseCall': toast('HERE COMES A HORSE!', 'save', '🐎'); sfx('neigh'); sfx('clop'); break;
         case 'buddy':
           toast(`${heroName(e.who)} IS HERE! 🐎`, 'save');
           sfx('buddy');

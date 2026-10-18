@@ -69,8 +69,8 @@
     'Walk into a soldier to grab him, then ⚔️ ⚔️ ⚔️ to toss him!': '走到士兵身上就能抓住他，再点 ⚔️ ⚔️ ⚔️ 把他扔出去！',
     'H = magic! It uses a 🔮. Press T to call your brother!': 'H = 法术！会用掉一个 🔮。按 T 叫兄弟来帮忙！',
     "Tap ✨ for magic! It uses a 🔮. Tap your brother's face to call him!": '点 ✨ 放法术！会用掉一个 🔮。点兄弟的头像叫他来帮忙！',
-    'A horse! Walk to it to ride. G hops off.': '有马！走过去就能骑上。按 G 跳下来。',
-    'A horse! Walk to it to ride. ⬆️ hops off.': '有马！走过去就能骑上。点 ⬆️ 跳下来。',
+    'A horse! Walk to it to ride, G hops off. Press R any time to call one.': '有马！走过去就能骑上，按 G 跳下来。随时按 R 都能叫一匹马来。',
+    'A horse! Walk to it to ride, ⬆️ hops off. Tap 🐎 any time to call one.': '有马！走过去就能骑上，点 ⬆️ 跳下来。随时点 🐎 都能叫一匹马来。',
     'Player 1: W A S D and F. Player 2: the arrows and J.': '1 号玩家：W A S D 和 F。2 号玩家：方向键和 J。',
     'Each player has a joystick and ⚔️ to swing!': '每个玩家都有一个摇杆和 ⚔️ 按钮！',
     'H or L = magic! It uses a 🔮. T = TEAM-UP!': 'H 或 L = 法术！会用掉一个 🔮。T = 合体必杀！',
@@ -124,14 +124,14 @@
     '⭐ score': '⭐ 分数', '🪙 coins': '🪙 金币', '💫 soldiers sent home': '💫 送回家的士兵', '⏱️ time': '⏱️ 时间',
     '🛡️ saves': '🛡️ 保护', '🤜🤛 team-ups': '🤜🤛 合体必杀',
     // touch buttons
-    'MAGIC': '法术', 'JUMP': '跳', 'SWING': '挥',
+    'MAGIC': '法术', 'JUMP': '跳', 'SWING': '挥', 'HORSE': '叫马', 'call a horse': '叫一匹马', 'HERE COMES A HORSE!': '马儿来啦！',
     // the ? panel
     'Player 1': '1 号玩家', 'Player 2': '2 号玩家', 'swing your weapon': '挥武器', 'jump (jump + swing = flying kick)': '跳（跳 + 挥 = 飞踢）',
     'magic (uses a 🔮)': '法术（用一个 🔮）', 'rescue spin (costs a heart)': '救命旋风（用一颗心）',
     'walk into a soldier to grab him, swing to toss him': '走到士兵身上抓住他，再挥武器把他扔出去',
-    'walk to a horse to ride it, jump to hop off': '走到马旁边就能骑，跳一下就下马', 'call your brother · team-up': '叫兄弟 · 合体必杀',
+    'call a horse (walk to it to ride, jump to hop off)': '叫一匹马（走过去就能骑，跳一下就下马）', 'call your brother · team-up': '叫兄弟 · 合体必杀',
     'In 1 player both sets of keys work, and Space jumps. With no 🔮 left, magic does the rescue spin.': '1 个人玩时两组按键都能用，空格键也能跳。没有 🔮 了，法术键会放救命旋风。',
-    "Joystick, ⚔️ SWING, ⬆️ JUMP and ✨ MAGIC. Tap your brother's face to call him.": '摇杆、⚔️ 挥、⬆️ 跳和 ✨ 法术。点兄弟的头像叫他来帮忙。',
+    "Joystick, ⚔️ SWING, ⬆️ JUMP, ✨ MAGIC and 🐎 HORSE. Tap your brother's face to call him.": '摇杆、⚔️ 挥、⬆️ 跳、✨ 法术和 🐎 叫马。点兄弟的头像叫他来帮忙。',
   });
 
   const tr = (dict, s) => dict[s] || s;

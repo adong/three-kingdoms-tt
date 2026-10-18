@@ -2,7 +2,8 @@
    buttons for touch. Presses are latched until the game reads them, so a tap shorter than one frame still counts.
      Player 1: W A S D walk, F attack, G jump, H magic
      Player 2: arrows walk, J attack, K jump, L magic
-     T or Enter: call your brother (1 player) / team-up (2 players).  Double-tap left or right to dash.
+     T or Enter: call your brother (1 player) / team-up (2 players).  R / O: call a horse.
+     Double-tap left or right to dash.
      Attack + jump together: the rescue spin.
    In 1-player mode both key sets drive you, and Space jumps too. */
 (function () {
@@ -10,12 +11,12 @@
 
   const KEYS = {
     KeyA: [0, 'left'], KeyD: [0, 'right'], KeyW: [0, 'up'], KeyS: [0, 'down'],
-    KeyF: [0, 'attack'], KeyG: [0, 'jump'], KeyH: [0, 'special'], KeyT: [0, 'call'],
+    KeyF: [0, 'attack'], KeyG: [0, 'jump'], KeyH: [0, 'special'], KeyT: [0, 'call'], KeyR: [0, 'horse'],
     ArrowLeft: [1, 'left'], ArrowRight: [1, 'right'], ArrowUp: [1, 'up'], ArrowDown: [1, 'down'],
-    KeyJ: [1, 'attack'], KeyK: [1, 'jump'], KeyL: [1, 'special'], Enter: [1, 'call'], NumpadEnter: [1, 'call'],
+    KeyJ: [1, 'attack'], KeyK: [1, 'jump'], KeyL: [1, 'special'], Enter: [1, 'call'], NumpadEnter: [1, 'call'], KeyO: [1, 'horse'],
     Space: [0, 'jump'],
   };
-  const PRESS = { attack: 1, jump: 1, special: 1, call: 1 };
+  const PRESS = { attack: 1, jump: 1, special: 1, call: 1, horse: 1 };
   const DASH_GAP = 0.3; // seconds between two taps of the same direction
 
   let twoPlayer = false;
@@ -68,7 +69,7 @@
 
   // The controller for one brother this step. Clears the presses it reports.
   function read(slot) {
-    const out = { mx: 0, mz: 0, attack: false, jump: false, special: false, call: false, dash: 0 };
+    const out = { mx: 0, mz: 0, attack: false, jump: false, special: false, call: false, horse: false, dash: 0 };
     if (!enabled) return out;
     const srcs = twoPlayer ? [slot] : [0, 1];
     for (const s of srcs) {

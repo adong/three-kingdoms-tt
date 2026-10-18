@@ -69,7 +69,12 @@
   .chip.orbs { display: inline-flex; border-color: #c9a0ff; background: rgba(110, 60, 200, 0.45); }
   .chip.coins { display: inline-flex; border-color: var(--gold); color: #ffe9a0; }
   .chip.wlv { display: inline-flex; border-color: #9fe0ff; }
-  .chip.horse { border-color: #ffb070; background: rgba(160, 90, 40, 0.5); }
+  .chip.horse { display: inline-flex; border-color: #ffb070; background: rgba(160, 90, 40, 0.5); }
+  .chip.horse.wait { opacity: 0.45; filter: grayscale(0.8); }
+  .chip.horse.riding { background: #ff8a1f; border-color: #fff; }
+  .tbtn.hrs { grid-column: 1; grid-row: 1; background: linear-gradient(160deg, #ffc27a, #c8763a); }
+  .tbtn.hrs.wait { opacity: 0.45; filter: grayscale(0.8); }
+  #touch.two .c1 .hrs { grid-column: 2; }
   .hp { position: relative; height: 22px; border-radius: 8px; background: rgba(20, 18, 31, 0.7); border: 3px solid #fff; overflow: hidden; box-shadow: 0 3px 0 var(--ink); }
   .hp b { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; transform-origin: left; }
   .right .hp b { transform-origin: right; }
@@ -466,6 +471,7 @@
       <button class="tbtn spc" data-act="special" data-side="0"><span class="se">✨</span><small>MAGIC</small><span class="orbn">2</span></button>
       <button class="tbtn jmp" data-act="jump" data-side="0">⬆️<small>JUMP</small></button>
       <button class="tbtn atk" data-act="attack" data-side="0">⚔️<small>SWING</small></button>
+      <button class="tbtn hrs" data-act="horse" data-side="0">🐎<small>HORSE</small></button>
     </div>
   </div>
   <div class="c1">
@@ -474,6 +480,7 @@
       <button class="tbtn spc" data-act="special" data-side="1"><span class="se">✨</span><small>MAGIC</small><span class="orbn">2</span></button>
       <button class="tbtn jmp" data-act="jump" data-side="1">⬆️<small>JUMP</small></button>
       <button class="tbtn atk" data-act="attack" data-side="1">⚔️<small>SWING</small></button>
+      <button class="tbtn hrs" data-act="horse" data-side="1">🐎<small>HORSE</small></button>
     </div>
   </div>
 </div>
@@ -495,6 +502,7 @@
     <span>walk (up and down the road too)</span><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
     <span>swing · jump · magic</span><span><kbd>F</kbd><kbd>G</kbd><kbd>H</kbd></span><span><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></span>
     <span>dash</span><span>double-tap <kbd>A</kbd>/<kbd>D</kbd></span><span>double-tap <kbd>←</kbd>/<kbd>→</kbd></span>
+    <span>call a horse</span><span><kbd>R</kbd></span><span><kbd>O</kbd></span>
     <span>call your brother / team-up</span><span><kbd>T</kbd></span><span><kbd>Enter</kbd></span>
   </div>
   <p class="touch-hint">Joystick to walk (flick it twice to dash). ⚔️ swing, ⬆️ jump, ✨ magic. Tap your brother's face to call him! On an iPad, two players can play side by side.</p>

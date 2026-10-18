@@ -52,7 +52,7 @@
       bonus: S.bonus ? { t: S.time, total: 0, perfect: false } : null,
       continues: opts.continues != null ? opts.continues : diff.continues,
       nextId: 1,
-      stats: { kos: 0, hits: 0, specials: 0, rescues: 0, treats: 0, saves: 0, deaths: 0, continues: 0, teamups: 0, calls: 0, time: 0, ouch: 0, coins: 0, chests: 0, rides: 0 },
+      stats: { kos: 0, hits: 0, specials: 0, rescues: 0, treats: 0, saves: 0, deaths: 0, continues: 0, teamups: 0, calls: 0, time: 0, ouch: 0, coins: 0, chests: 0, rides: 0, horseCalls: 0 },
     };
     let who;
     if (W.mode === '2p' || W.mode === 'demo') {
@@ -76,7 +76,7 @@
       x: W.cam.x - W.halfW - 0.8 - slot * 1.1, y: 0, z: W.mode === '1p' ? -0.4 : slot ? 0.3 : -1.1,
       vx: 0, vy: 0, vz: 0, face: 1, r: 0.4, scale: 1,
       hp: W.diff.hearts, maxHp: W.diff.hearts, lives: W.diff.lives, score: 0, coins: 0,
-      orbs: W.diff.orbs, orbFill: 0, wlv: 1, horse: false, tramp: {},
+      orbs: W.diff.orbs, orbFill: 0, wlv: 1, horse: false, horseCd: 0, tramp: {},
       state: 'enter', st: 0, move: null, combo: 0, comboT: 9, queued: false,
       grab: null, bops: 0, bopT: -1, contact: 0,
       inv: 0, freeze: 0, flash: 0, shield: false, out: false, ko: false, stun: 0,
@@ -119,7 +119,7 @@
 
   // ---------------------------------------------------------------- the main step
 
-  // inputs: one per hero: { mx, mz (-1..1), attack, jump, special, call (presses this step), dash (±1 on a double tap) }
+  // inputs: one per hero: { mx, mz (-1..1), attack, jump, special, call, horse (presses this step), dash (±1 on a double tap) }
   function step(W, inputs = []) {
     W.t += DT;
     W.phaseT += DT;
@@ -132,6 +132,8 @@
 
     // calling the brother (1P) or the team-up (2P)
     for (let i = 0; i < W.heroes.length; i++) if (inputs[i] && inputs[i].call) callBrother(W, i);
+    // calling a horse
+    for (let i = 0; i < W.heroes.length; i++) if (inputs[i] && inputs[i].horse) callHorse(W, i);
 
     W.heroes.forEach((h, i) => updateHero(W, h, W.phase === 'play' ? inputs[i] || noInput : noInput));
     if (W.buddy) updateBuddy(W, W.buddy);
@@ -318,6 +320,7 @@
     h.st += DT;
     h.inv = Math.max(0, h.inv - DT);
     h.flash = Math.max(0, h.flash - DT);
+    h.horseCd = Math.max(0, (h.horseCd || 0) - DT);
     h.comboT += DT;
     h.shield = W.mode === '1p' && buddyGuards(W);
     fighterBody(W, h, inp);
@@ -471,6 +474,22 @@
       h.kicked = true;
       ev(W, 'dismount', { who: h.who, x: h.x, z: h.z });
     } else ev(W, 'horseOff', { who: h.who, x: h.x, z: h.z, face: h.face });
+  }
+
+  // R (or O) calls a horse: it gallops in from behind and you hop on when it reaches you. One at a time, and after
+  // a call there's a little wait (a few seconds on easy) before the next.
+  function callHorse(W, slot) {
+    const h = W.heroes[slot];
+    if (!h || W.phase !== 'play' || !standing(h) || h.horse || h.horseCd > 0) return false;
+    if (W.items.some((it) => it.kind === 'horse' && it.coming && it.owner === h.id)) return false;
+    const it = spawnItem(W, 'horse', W.cam.x - W.halfW - 1.2, h.z, false);
+    it.coming = true;
+    it.owner = h.id;
+    it.face = 1;
+    h.horseCd = W.diff.horseCd;
+    W.stats.horseCalls++;
+    ev(W, 'horseCall', { who: h.who, x: h.x, z: h.z });
+    return true;
   }
 
   // Step down for magic or a team-up: the horse waits right behind you.
@@ -1298,6 +1317,18 @@
       }
       // something that pops out of a chest or a soldier always lands on-screen
       if (it.popped) it.x = clamp(it.x, viewL(W), viewR(W));
+      // a called horse gallops to whoever called it (and stops if he's already riding or gone)
+      if (it.coming) {
+        const h = W.heroes.find((o) => o.id === it.owner);
+        if (!h || !activeHero(h) || h.horse || W.phase !== 'play') { it.coming = false; it.x = clamp(it.x, viewL(W), viewR(W)); continue; }
+        const dx = h.x - it.x, dz = h.z - it.z, d = Math.hypot(dx, dz);
+        if (d < 0.5) { it.coming = false; continue; }
+        const sp = Math.min(d, W.R.HORSE.callSpeed * DT);
+        it.x += (dx / d) * sp;
+        it.z = clamp(it.z + (dz / d) * sp, W.zMin, W.zMax);
+        if (Math.abs(dx) > 0.05) it.face = sign(dx);
+        continue;
+      }
       // coins fly into the nearest hero's pocket by themselves
       if (isCoin(it) && it.t > 0.55 && W.phase !== 'celebrate' && W.phase !== 'done') {
         let h = null, bd = Infinity;
@@ -1665,7 +1696,7 @@
   }
 
   window.TKSim = {
-    DT, create, step, secX, spawnEnemy, spawnItem, callBrother, teamUp, continueGame, celebrants, CELEB, buddyFor,
+    DT, create, step, secX, spawnEnemy, spawnItem, callBrother, callHorse, teamUp, continueGame, celebrants, CELEB, buddyFor,
     // used by js/brains.js and the checks
     hurtHero, throwShot, ringBlast, startMove, hittable, standing, activeHero, viewL, viewR, ev, knockDown, damageEnemy,
     isCoin, clamp, sign,

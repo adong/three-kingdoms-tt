@@ -39,6 +39,7 @@ Each stage starts with a storybook card: the chapter's name in Chinese and Engli
 | rescue spin (costs a heart, never the last) | F + G together, or magic with no 🔮 left | J + K | ✨ with no 🔮 |
 | dash (swing while dashing = dash attack) | double-tap A or D | double-tap ← or → | flick the joystick sideways twice |
 | grab and toss | walk into a soldier, then F F F | walk into a soldier, then J J J | walk in, then ⚔️ ⚔️ ⚔️ |
+| call a horse | R | O | 🐎 HORSE |
 | ride a horse · hop off | walk to it · G | walk to it · K | walk to it · ⬆️ |
 | call your brother (1P) / team-up (2P) | T | Enter | tap his face (1P) or TEAM-UP! (2P) |
 
@@ -53,7 +54,7 @@ Each stage starts with a storybook card: the chapter's name in Chinese and Engli
 - **Treasure chests:** bonk one open for a weapon upgrade (⚔️: foam blue, then silver, then glowing gold; each level hits harder and reaches further), a 🔮, coins, a gold ingot or food.
 - **Food:** 包子 bao bun (+2 hearts), 鸡腿 drumstick (+3) and 寿桃 longevity peach (all your hearts). Beaten soldiers sometimes drop some.
 - **🔮 Magic:** start with 3 on Easy (up to 5) or 2 on Normal (up to 3). Every few soldiers you send home fills one back up.
-- **Horses:** some stages have a toy horse waiting. Walk to it to ride: you're faster, your swing is a big sweep from the saddle, and galloping into soldiers bowls them over (CLIP-CLOP!). A bonk knocks you off but costs no heart; the horse trots home. Jump to hop off, and the horse waits for you.
+- **Horses:** some stages have a toy horse waiting, and you can **call one any time with R** (O for player 2, or the 🐎 button): it gallops in from behind and you hop on. One at a time, then a short wait before the next call (4 s on Easy, 10 s on Normal); the 🐎 chip and button go grey while you wait. Riding, you're faster, your swing is a big sweep from the saddle, and galloping into soldiers bowls them over (CLIP-CLOP!). A bonk knocks you off but costs no heart; the horse trots home. Jump to hop off, and the horse waits for you.
 - **Coins** fly into your pocket by themselves.
 
 ## Heroes
@@ -119,7 +120,7 @@ Every stage ends with both heroes' signature moves (Teddy's jab-straight and �
 node tools/check.js --prove
 ```
 
-That runs 35 single-move checks (every hero's combo and magic, grab and toss, chests, food, horses, the companion blocking every hit, team-up, continues, the bonus timer), then the autopilot through every stage, bonus round and general in 11 set-ups (each hero, Easy and Normal, 1P and 2P, with and without the companion, and a sloppy "kid" autopilot that never uses magic), and finally proves the check can fail (an idle player must not clear stage 1; a soldier pushed off-screen must be caught). Add `--soak 3` for 3 extra random seeds per run. In the browser, `game.soak()`, `game.moves()` and `game.prove()` run the same checks, and `game.start({ stage, hero, mode, difficulty })` with `game.step(seconds)` drives a real stage frame by frame.
+That runs 38 single-move checks (every hero's combo and magic, grab and toss, chests, food, horses and calling one, the companion blocking every hit, team-up, continues, the bonus timer), then the autopilot through every stage, bonus round and general in 11 set-ups (each hero, Easy and Normal, 1P and 2P, with and without the companion, calling horses, and a sloppy "kid" autopilot that never uses magic), and finally proves the check can fail (an idle player must not clear stage 1; a soldier pushed off-screen must be caught). Add `--soak 3` for 3 extra random seeds per run. In the browser, `game.soak()`, `game.moves()` and `game.prove()` run the same checks, and `game.start({ stage, hero, mode, difficulty })` with `game.step(seconds)` drives a real stage frame by frame.
 
 ## Not verified
 

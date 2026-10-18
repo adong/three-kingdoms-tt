@@ -274,7 +274,7 @@ window.TK_TIPS = {
   jump:  { keys: 'G jumps. Jump, then F = flying kick! Bonk the chest open too.', touch: 'Tap ⬆️ to jump, then ⚔️ for a flying kick! Bonk the chest open too.' },
   grab:  { keys: 'Walk into a soldier to grab him, then F F F to toss him!', touch: 'Walk into a soldier to grab him, then ⚔️ ⚔️ ⚔️ to toss him!' },
   magic: { keys: 'H = magic! It uses a 🔮. Press T to call your brother!', touch: 'Tap ✨ for magic! It uses a 🔮. Tap your brother\'s face to call him!' },
-  horse: { keys: 'A horse! Walk to it to ride. G hops off.', touch: 'A horse! Walk to it to ride. ⬆️ hops off.' },
+  horse: { keys: 'A horse! Walk to it to ride, G hops off. Press R any time to call one.', touch: 'A horse! Walk to it to ride, ⬆️ hops off. Tap 🐎 any time to call one.' },
   // two players
   move2:  { keys: 'Player 1: W A S D and F. Player 2: the arrows and J.', touch: 'Each player has a joystick and ⚔️ to swing!' },
   magic2: { keys: 'H or L = magic! It uses a 🔮. T = TEAM-UP!', touch: 'Tap ✨ for magic! It uses a 🔮. Tap TEAM-UP when it glows!' },

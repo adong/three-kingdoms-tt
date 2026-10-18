@@ -219,6 +219,7 @@
     speed: 1.6, speedZ: 1.15,  // times your walking speed
     trampleSpeed: 3.2,         // faster than this, you bowl over anyone in front of you
     height: 0.82,              // how high the saddle is
+    callSpeed: 8,              // a called horse gallops in from behind you at this speed
   };
 
   // ---------------------------------------------------------------- the companion
@@ -247,12 +248,12 @@
     easy: {
       name: 'EASY', hearts: 8, lives: 5, continues: Infinity, orbs: 3, maxOrbs: 5,
       enemyHp: 0.6, enemySpeed: 0.78, windup: 1.5, bossHp: 0.55, keep: 0.67,
-      maxActive: 3, maxAttackers: 1, teamCd: 15, mercy: 1.1, orbPerKo: 0.2,
+      maxActive: 3, maxAttackers: 1, teamCd: 15, mercy: 1.1, orbPerKo: 0.2, horseCd: 4,
     },
     normal: {
       name: 'NORMAL', hearts: 5, lives: 3, continues: 2, orbs: 2, maxOrbs: 3,
       enemyHp: 1, enemySpeed: 1, windup: 1, bossHp: 1, keep: 1,
-      maxActive: 4, maxAttackers: 2, teamCd: 25, mercy: 0.7, orbPerKo: 0.12,
+      maxActive: 4, maxAttackers: 2, teamCd: 25, mercy: 0.7, orbPerKo: 0.12, horseCd: 10,
     },
   };
 

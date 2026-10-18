@@ -13,7 +13,7 @@
 
   function run(cfg) {
     const W = Sim().create({ stage: cfg.stage, mode: cfg.mode, hero: cfg.hero, heroes: cfg.heroes, difficulty: cfg.diff, seed: cfg.seed, continues: Infinity });
-    const mems = W.heroes.map(() => ({ opts: { call: cfg.call, callEvery: cfg.mode === '2p' ? 4 : 14, kid: cfg.kid } }));
+    const mems = W.heroes.map(() => ({ opts: { call: cfg.call, callEvery: cfg.mode === '2p' ? 4 : 14, kid: cfg.kid, horse: cfg.horse } }));
     const problems = [];
     const fail = (msg) => { if (problems.length < 5) problems.push(`t=${W.t.toFixed(1)} ${msg}`); };
     let lockedEmpty = 0, travelT = 0, sabotaged = false;
@@ -73,10 +73,10 @@
     { name: '1P Tommy easy +buddy', mode: '1p', hero: 'tommy', diff: 'easy', call: true },
     { name: '1P Zoom normal', mode: '1p', hero: 'zoom', diff: 'normal' },
     { name: '1P Luna normal +buddy', mode: '1p', hero: 'luna', diff: 'normal', call: true },
-    { name: '1P Bolt easy', mode: '1p', hero: 'bolt', diff: 'easy' },
+    { name: '1P Bolt easy +horse', mode: '1p', hero: 'bolt', diff: 'easy', horse: true },
     { name: '1P Bruno normal', mode: '1p', hero: 'bruno', diff: 'normal' },
     { name: '1P Teddy normal', mode: '1p', hero: 'teddy', diff: 'normal' },
-    { name: '2P easy', mode: '2p', diff: 'easy' },
+    { name: '2P easy +horses', mode: '2p', diff: 'easy', horse: true },
     { name: '2P normal +team-up', mode: '2p', diff: 'normal', call: true, heroes: ['luna', 'bruno'] },
     { name: '1P Tommy easy, kid', mode: '1p', hero: 'tommy', diff: 'easy', kid: true },
     { name: '1P Teddy normal, kid', mode: '1p', hero: 'teddy', diff: 'normal', kid: true },
@@ -104,7 +104,7 @@
             const notes = [];
             if (s.call && s.mode === '1p') notes.push(`buddy x${r.seen.buddy}, treats ${r.seen.treats}, saves ${r.stats.saves}`);
             if (s.call && s.mode === '2p') notes.push(`team-ups ${r.stats.teamups}`);
-            notes.push(`magic ${r.stats.specials}, rescue ${r.stats.rescues}, ouch ${r.stats.ouch}, coins ${r.coins}, rides ${r.stats.rides}`);
+            notes.push(`magic ${r.stats.specials}, rescue ${r.stats.rescues}, ouch ${r.stats.ouch}, coins ${r.coins}, rides ${r.stats.rides}` + (s.horse ? `, horses called ${r.stats.horseCalls}` : ''));
             log(pad(r.stage + (seed !== seeds[0] ? ` #${seed}` : ''), 14) + pad(s.name, 26) + pad(r.ok ? 'CLEAR' : 'FAIL', 7) +
               pad(r.time.toFixed(0) + 's', 7) + pad(r.stats.kos, 5) + pad(r.stats.deaths, 4) + pad(r.continues, 4) + notes.join(', '));
           }
@@ -247,6 +247,20 @@
     W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
     step(W, { mx: 1 }, 10); step(W, { jump: true }); step(W, {}, 40);
     ok('jump hops off, and the horse waits for you', !W.heroes[0].horse && W.items.some((i) => i.kind === 'horse'));
+    // R calls a horse: it gallops in from behind, you're on it; then a little wait before the next call
+    W = fresh();
+    step(W, { horse: true }); step(W, {}, 30);
+    const coming = W.items.some((i) => i.kind === 'horse' && i.coming);
+    step(W, { horse: true });
+    const twice = W.stats.horseCalls;
+    step(W, {}, 60 * 3);
+    ok('R calls a horse that gallops to you, and you ride it', coming && W.heroes[0].horse && count(W, 'horseCall') === 1, `coming ${coming}, riding ${W.heroes[0].horse}`);
+    ok('one horse at a time: pressing again while it comes does nothing', twice === 1, `calls ${twice}`);
+    W.heroes[0].horse = false;
+    step(W, { horse: true });
+    const waited = W.stats.horseCalls === 1;
+    step(W, {}, Math.ceil(60 * W.diff.horseCd)); step(W, { horse: true }); step(W, {}, 2);
+    ok(`then a wait before the next call (${window.TK_RULES.DIFF.easy.horseCd} s easy, ${window.TK_RULES.DIFF.normal.horseCd} s normal)`, waited && W.stats.horseCalls === 2, `calls ${W.stats.horseCalls}`);
 
     // the companion: arrives, treat heals, blocks EVERY hit while he's here, leaves after ~10 s
     W = fresh(); W.heroes[0].hp = 2;

@@ -426,7 +426,8 @@
   // ---------------------------------------------------------------- the autopilot
 
   // A simple player for the soak and the title-screen demo. mem keeps a little state between steps.
-  // mem.opts: call (call the brother / team-up now and then), kid (slow, mashy, never uses magic), noMagic.
+  // mem.opts: call (call the brother / team-up now and then), horse (call a horse now and then), kid (slow, mashy,
+  // never uses magic), noMagic.
   function bot(W, h, mem = {}) {
     const inp = { mx: 0, mz: 0 };
     if (!Sim().standing(h) || W.phase !== 'play') {
@@ -452,6 +453,11 @@
         inp.call = true;
       }
     }
+    // call a horse when there isn't one around
+    if (opts.horse && !h.horse && h.horseCd <= 0 && W.t > (mem.nextHorse || 3) && !W.items.some((it) => it.kind === 'horse' && it.x > L - 2 && it.x < R)) {
+      mem.nextHorse = W.t + 8;
+      inp.horse = true;
+    }
     const foes = W.enemies.filter((e) => Sim().hittable(W, e) && e.x > L - 0.5 && e.x < R + 0.5);
     // magic when crowded (or the rescue spin when there's no 🔮 left and it's getting scary)
     const close = foes.filter((e) => Math.abs(e.x - h.x) < 2.4 && Math.abs(e.z - h.z) < 1.2).length;
@@ -476,12 +482,12 @@
     const goody = W.items.find((it) => (it.kind === 'up' || it.kind === 'orb') && onScreen(it) && it.y < 0.3);
     if (goody && close === 0) return Object.assign(inp, steer(h, goody.x, goody.z, 0.2));
     // a horse! hop on (not in the middle of a crowd)
-    const horse = !h.horse && !opts.kid && W.items.find((it) => it.kind === 'horse' && onScreen(it));
+    const horse = !h.horse && !opts.kid && W.items.find((it) => it.kind === 'horse' && onScreen(it) && (!it.coming || it.owner === h.id));
     if (horse && close === 0 && Math.abs(horse.x - h.x) < 6) return Object.assign(inp, steer(h, horse.x, horse.z, 0.2));
     // chests and jars in reach
     if (!foes.length) {
       const crate = W.crates.filter(onScreen).sort((a, b) => Math.abs(a.x - h.x) + Math.abs(a.z - h.z) * 2 - Math.abs(b.x - h.x) - Math.abs(b.z - h.z) * 2)[0];
-      if (crate) return fightInput(W, h, { x: crate.x, z: crate.z, r: 0.3 }, 1.1, mem);
+      if (crate) return Object.assign(inp, fightInput(W, h, { x: crate.x, z: crate.z, r: 0.3 }, 1.1, mem));
       if (W.secState === 'travel') { inp.mx = 1; inp.mz = sign(-0.4 - h.z) * 0.5; }
       return inp;
     }

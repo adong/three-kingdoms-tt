@@ -69,7 +69,12 @@
   .chip.orbs { display: inline-flex; border-color: #c9a0ff; background: rgba(110, 60, 200, 0.45); }
   .chip.coins { display: inline-flex; border-color: var(--gold); color: #ffe9a0; }
   .chip.wlv { display: inline-flex; border-color: #9fe0ff; }
-  .chip.horse { border-color: #ffb070; background: rgba(160, 90, 40, 0.5); }
+  .chip.horse { display: inline-flex; border-color: #ffb070; background: rgba(160, 90, 40, 0.5); }
+  .chip.horse.wait { opacity: 0.45; filter: grayscale(0.8); }
+  .chip.horse.riding { background: #ff8a1f; border-color: #fff; }
+  .tbtn.hrs { grid-column: 1; grid-row: 1; background: linear-gradient(160deg, #ffc27a, #c8763a); }
+  .tbtn.hrs.wait { opacity: 0.45; filter: grayscale(0.8); }
+  #touch.two .c1 .hrs { grid-column: 2; }
   .hp { position: relative; height: 22px; border-radius: 8px; background: rgba(20, 18, 31, 0.7); border: 3px solid #fff; overflow: hidden; box-shadow: 0 3px 0 var(--ink); }
   .hp b { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; transform-origin: left; }
   .right .hp b { transform-origin: right; }
@@ -466,6 +471,7 @@
       <button class="tbtn spc" data-act="special" data-side="0"><span class="se">✨</span><small>MAGIC</small><span class="orbn">2</span></button>
       <button class="tbtn jmp" data-act="jump" data-side="0">⬆️<small>JUMP</small></button>
       <button class="tbtn atk" data-act="attack" data-side="0">⚔️<small>SWING</small></button>
+      <button class="tbtn hrs" data-act="horse" data-side="0">🐎<small>HORSE</small></button>
     </div>
   </div>
   <div class="c1">
@@ -474,6 +480,7 @@
       <button class="tbtn spc" data-act="special" data-side="1"><span class="se">✨</span><small>MAGIC</small><span class="orbn">2</span></button>
       <button class="tbtn jmp" data-act="jump" data-side="1">⬆️<small>JUMP</small></button>
       <button class="tbtn atk" data-act="attack" data-side="1">⚔️<small>SWING</small></button>
+      <button class="tbtn hrs" data-act="horse" data-side="1">🐎<small>HORSE</small></button>
     </div>
   </div>
 </div>
@@ -495,6 +502,7 @@
     <span>walk (up and down the road too)</span><span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
     <span>swing · jump · magic</span><span><kbd>F</kbd><kbd>G</kbd><kbd>H</kbd></span><span><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></span>
     <span>dash</span><span>double-tap <kbd>A</kbd>/<kbd>D</kbd></span><span>double-tap <kbd>←</kbd>/<kbd>→</kbd></span>
+    <span>call a horse</span><span><kbd>R</kbd></span><span><kbd>O</kbd></span>
     <span>call your brother / team-up</span><span><kbd>T</kbd></span><span><kbd>Enter</kbd></span>
   </div>
   <p class="touch-hint">Joystick to walk (flick it twice to dash). ⚔️ swing, ⬆️ jump, ✨ magic. Tap your brother's face to call him! On an iPad, two players can play side by side.</p>
@@ -2163,6 +2171,7 @@ window.TK_TITLE = {
     speed: 1.6, speedZ: 1.15,  // times your walking speed
     trampleSpeed: 3.2,         // faster than this, you bowl over anyone in front of you
     height: 0.82,              // how high the saddle is
+    callSpeed: 8,              // a called horse gallops in from behind you at this speed
   };
 
   // ---------------------------------------------------------------- the companion
@@ -2191,12 +2200,12 @@ window.TK_TITLE = {
     easy: {
       name: 'EASY', hearts: 8, lives: 5, continues: Infinity, orbs: 3, maxOrbs: 5,
       enemyHp: 0.6, enemySpeed: 0.78, windup: 1.5, bossHp: 0.55, keep: 0.67,
-      maxActive: 3, maxAttackers: 1, teamCd: 15, mercy: 1.1, orbPerKo: 0.2,
+      maxActive: 3, maxAttackers: 1, teamCd: 15, mercy: 1.1, orbPerKo: 0.2, horseCd: 4,
     },
     normal: {
       name: 'NORMAL', hearts: 5, lives: 3, continues: 2, orbs: 2, maxOrbs: 3,
       enemyHp: 1, enemySpeed: 1, windup: 1, bossHp: 1, keep: 1,
-      maxActive: 4, maxAttackers: 2, teamCd: 25, mercy: 0.7, orbPerKo: 0.12,
+      maxActive: 4, maxAttackers: 2, teamCd: 25, mercy: 0.7, orbPerKo: 0.12, horseCd: 10,
     },
   };
 
@@ -2481,7 +2490,7 @@ window.TK_TIPS = {
   jump:  { keys: 'G jumps. Jump, then F = flying kick! Bonk the chest open too.', touch: 'Tap ⬆️ to jump, then ⚔️ for a flying kick! Bonk the chest open too.' },
   grab:  { keys: 'Walk into a soldier to grab him, then F F F to toss him!', touch: 'Walk into a soldier to grab him, then ⚔️ ⚔️ ⚔️ to toss him!' },
   magic: { keys: 'H = magic! It uses a 🔮. Press T to call your brother!', touch: 'Tap ✨ for magic! It uses a 🔮. Tap your brother\'s face to call him!' },
-  horse: { keys: 'A horse! Walk to it to ride. G hops off.', touch: 'A horse! Walk to it to ride. ⬆️ hops off.' },
+  horse: { keys: 'A horse! Walk to it to ride, G hops off. Press R any time to call one.', touch: 'A horse! Walk to it to ride, ⬆️ hops off. Tap 🐎 any time to call one.' },
   // two players
   move2:  { keys: 'Player 1: W A S D and F. Player 2: the arrows and J.', touch: 'Each player has a joystick and ⚔️ to swing!' },
   magic2: { keys: 'H or L = magic! It uses a 🔮. T = TEAM-UP!', touch: 'Tap ✨ for magic! It uses a 🔮. Tap TEAM-UP when it glows!' },
@@ -2543,7 +2552,7 @@ window.TK_TIPS = {
       bonus: S.bonus ? { t: S.time, total: 0, perfect: false } : null,
       continues: opts.continues != null ? opts.continues : diff.continues,
       nextId: 1,
-      stats: { kos: 0, hits: 0, specials: 0, rescues: 0, treats: 0, saves: 0, deaths: 0, continues: 0, teamups: 0, calls: 0, time: 0, ouch: 0, coins: 0, chests: 0, rides: 0 },
+      stats: { kos: 0, hits: 0, specials: 0, rescues: 0, treats: 0, saves: 0, deaths: 0, continues: 0, teamups: 0, calls: 0, time: 0, ouch: 0, coins: 0, chests: 0, rides: 0, horseCalls: 0 },
     };
     let who;
     if (W.mode === '2p' || W.mode === 'demo') {
@@ -2567,7 +2576,7 @@ window.TK_TIPS = {
       x: W.cam.x - W.halfW - 0.8 - slot * 1.1, y: 0, z: W.mode === '1p' ? -0.4 : slot ? 0.3 : -1.1,
       vx: 0, vy: 0, vz: 0, face: 1, r: 0.4, scale: 1,
       hp: W.diff.hearts, maxHp: W.diff.hearts, lives: W.diff.lives, score: 0, coins: 0,
-      orbs: W.diff.orbs, orbFill: 0, wlv: 1, horse: false, tramp: {},
+      orbs: W.diff.orbs, orbFill: 0, wlv: 1, horse: false, horseCd: 0, tramp: {},
       state: 'enter', st: 0, move: null, combo: 0, comboT: 9, queued: false,
       grab: null, bops: 0, bopT: -1, contact: 0,
       inv: 0, freeze: 0, flash: 0, shield: false, out: false, ko: false, stun: 0,
@@ -2610,7 +2619,7 @@ window.TK_TIPS = {
 
   // ---------------------------------------------------------------- the main step
 
-  // inputs: one per hero: { mx, mz (-1..1), attack, jump, special, call (presses this step), dash (±1 on a double tap) }
+  // inputs: one per hero: { mx, mz (-1..1), attack, jump, special, call, horse (presses this step), dash (±1 on a double tap) }
   function step(W, inputs = []) {
     W.t += DT;
     W.phaseT += DT;
@@ -2623,6 +2632,8 @@ window.TK_TIPS = {
 
     // calling the brother (1P) or the team-up (2P)
     for (let i = 0; i < W.heroes.length; i++) if (inputs[i] && inputs[i].call) callBrother(W, i);
+    // calling a horse
+    for (let i = 0; i < W.heroes.length; i++) if (inputs[i] && inputs[i].horse) callHorse(W, i);
 
     W.heroes.forEach((h, i) => updateHero(W, h, W.phase === 'play' ? inputs[i] || noInput : noInput));
     if (W.buddy) updateBuddy(W, W.buddy);
@@ -2809,6 +2820,7 @@ window.TK_TIPS = {
     h.st += DT;
     h.inv = Math.max(0, h.inv - DT);
     h.flash = Math.max(0, h.flash - DT);
+    h.horseCd = Math.max(0, (h.horseCd || 0) - DT);
     h.comboT += DT;
     h.shield = W.mode === '1p' && buddyGuards(W);
     fighterBody(W, h, inp);
@@ -2962,6 +2974,22 @@ window.TK_TIPS = {
       h.kicked = true;
       ev(W, 'dismount', { who: h.who, x: h.x, z: h.z });
     } else ev(W, 'horseOff', { who: h.who, x: h.x, z: h.z, face: h.face });
+  }
+
+  // R (or O) calls a horse: it gallops in from behind and you hop on when it reaches you. One at a time, and after
+  // a call there's a little wait (a few seconds on easy) before the next.
+  function callHorse(W, slot) {
+    const h = W.heroes[slot];
+    if (!h || W.phase !== 'play' || !standing(h) || h.horse || h.horseCd > 0) return false;
+    if (W.items.some((it) => it.kind === 'horse' && it.coming && it.owner === h.id)) return false;
+    const it = spawnItem(W, 'horse', W.cam.x - W.halfW - 1.2, h.z, false);
+    it.coming = true;
+    it.owner = h.id;
+    it.face = 1;
+    h.horseCd = W.diff.horseCd;
+    W.stats.horseCalls++;
+    ev(W, 'horseCall', { who: h.who, x: h.x, z: h.z });
+    return true;
   }
 
   // Step down for magic or a team-up: the horse waits right behind you.
@@ -3789,6 +3817,18 @@ window.TK_TIPS = {
       }
       // something that pops out of a chest or a soldier always lands on-screen
       if (it.popped) it.x = clamp(it.x, viewL(W), viewR(W));
+      // a called horse gallops to whoever called it (and stops if he's already riding or gone)
+      if (it.coming) {
+        const h = W.heroes.find((o) => o.id === it.owner);
+        if (!h || !activeHero(h) || h.horse || W.phase !== 'play') { it.coming = false; it.x = clamp(it.x, viewL(W), viewR(W)); continue; }
+        const dx = h.x - it.x, dz = h.z - it.z, d = Math.hypot(dx, dz);
+        if (d < 0.5) { it.coming = false; continue; }
+        const sp = Math.min(d, W.R.HORSE.callSpeed * DT);
+        it.x += (dx / d) * sp;
+        it.z = clamp(it.z + (dz / d) * sp, W.zMin, W.zMax);
+        if (Math.abs(dx) > 0.05) it.face = sign(dx);
+        continue;
+      }
       // coins fly into the nearest hero's pocket by themselves
       if (isCoin(it) && it.t > 0.55 && W.phase !== 'celebrate' && W.phase !== 'done') {
         let h = null, bd = Infinity;
@@ -4156,7 +4196,7 @@ window.TK_TIPS = {
   }
 
   window.TKSim = {
-    DT, create, step, secX, spawnEnemy, spawnItem, callBrother, teamUp, continueGame, celebrants, CELEB, buddyFor,
+    DT, create, step, secX, spawnEnemy, spawnItem, callBrother, callHorse, teamUp, continueGame, celebrants, CELEB, buddyFor,
     // used by js/brains.js and the checks
     hurtHero, throwShot, ringBlast, startMove, hittable, standing, activeHero, viewL, viewR, ev, knockDown, damageEnemy,
     isCoin, clamp, sign,
@@ -4593,7 +4633,8 @@ window.TK_TIPS = {
   // ---------------------------------------------------------------- the autopilot
 
   // A simple player for the soak and the title-screen demo. mem keeps a little state between steps.
-  // mem.opts: call (call the brother / team-up now and then), kid (slow, mashy, never uses magic), noMagic.
+  // mem.opts: call (call the brother / team-up now and then), horse (call a horse now and then), kid (slow, mashy,
+  // never uses magic), noMagic.
   function bot(W, h, mem = {}) {
     const inp = { mx: 0, mz: 0 };
     if (!Sim().standing(h) || W.phase !== 'play') {
@@ -4619,6 +4660,11 @@ window.TK_TIPS = {
         inp.call = true;
       }
     }
+    // call a horse when there isn't one around
+    if (opts.horse && !h.horse && h.horseCd <= 0 && W.t > (mem.nextHorse || 3) && !W.items.some((it) => it.kind === 'horse' && it.x > L - 2 && it.x < R)) {
+      mem.nextHorse = W.t + 8;
+      inp.horse = true;
+    }
     const foes = W.enemies.filter((e) => Sim().hittable(W, e) && e.x > L - 0.5 && e.x < R + 0.5);
     // magic when crowded (or the rescue spin when there's no 🔮 left and it's getting scary)
     const close = foes.filter((e) => Math.abs(e.x - h.x) < 2.4 && Math.abs(e.z - h.z) < 1.2).length;
@@ -4643,12 +4689,12 @@ window.TK_TIPS = {
     const goody = W.items.find((it) => (it.kind === 'up' || it.kind === 'orb') && onScreen(it) && it.y < 0.3);
     if (goody && close === 0) return Object.assign(inp, steer(h, goody.x, goody.z, 0.2));
     // a horse! hop on (not in the middle of a crowd)
-    const horse = !h.horse && !opts.kid && W.items.find((it) => it.kind === 'horse' && onScreen(it));
+    const horse = !h.horse && !opts.kid && W.items.find((it) => it.kind === 'horse' && onScreen(it) && (!it.coming || it.owner === h.id));
     if (horse && close === 0 && Math.abs(horse.x - h.x) < 6) return Object.assign(inp, steer(h, horse.x, horse.z, 0.2));
     // chests and jars in reach
     if (!foes.length) {
       const crate = W.crates.filter(onScreen).sort((a, b) => Math.abs(a.x - h.x) + Math.abs(a.z - h.z) * 2 - Math.abs(b.x - h.x) - Math.abs(b.z - h.z) * 2)[0];
-      if (crate) return fightInput(W, h, { x: crate.x, z: crate.z, r: 0.3 }, 1.1, mem);
+      if (crate) return Object.assign(inp, fightInput(W, h, { x: crate.x, z: crate.z, r: 0.3 }, 1.1, mem));
       if (W.secState === 'travel') { inp.mx = 1; inp.mz = sign(-0.4 - h.z) * 0.5; }
       return inp;
     }
@@ -4698,7 +4744,7 @@ window.TK_TIPS = {
 
   function run(cfg) {
     const W = Sim().create({ stage: cfg.stage, mode: cfg.mode, hero: cfg.hero, heroes: cfg.heroes, difficulty: cfg.diff, seed: cfg.seed, continues: Infinity });
-    const mems = W.heroes.map(() => ({ opts: { call: cfg.call, callEvery: cfg.mode === '2p' ? 4 : 14, kid: cfg.kid } }));
+    const mems = W.heroes.map(() => ({ opts: { call: cfg.call, callEvery: cfg.mode === '2p' ? 4 : 14, kid: cfg.kid, horse: cfg.horse } }));
     const problems = [];
     const fail = (msg) => { if (problems.length < 5) problems.push(`t=${W.t.toFixed(1)} ${msg}`); };
     let lockedEmpty = 0, travelT = 0, sabotaged = false;
@@ -4758,10 +4804,10 @@ window.TK_TIPS = {
     { name: '1P Tommy easy +buddy', mode: '1p', hero: 'tommy', diff: 'easy', call: true },
     { name: '1P Zoom normal', mode: '1p', hero: 'zoom', diff: 'normal' },
     { name: '1P Luna normal +buddy', mode: '1p', hero: 'luna', diff: 'normal', call: true },
-    { name: '1P Bolt easy', mode: '1p', hero: 'bolt', diff: 'easy' },
+    { name: '1P Bolt easy +horse', mode: '1p', hero: 'bolt', diff: 'easy', horse: true },
     { name: '1P Bruno normal', mode: '1p', hero: 'bruno', diff: 'normal' },
     { name: '1P Teddy normal', mode: '1p', hero: 'teddy', diff: 'normal' },
-    { name: '2P easy', mode: '2p', diff: 'easy' },
+    { name: '2P easy +horses', mode: '2p', diff: 'easy', horse: true },
     { name: '2P normal +team-up', mode: '2p', diff: 'normal', call: true, heroes: ['luna', 'bruno'] },
     { name: '1P Tommy easy, kid', mode: '1p', hero: 'tommy', diff: 'easy', kid: true },
     { name: '1P Teddy normal, kid', mode: '1p', hero: 'teddy', diff: 'normal', kid: true },
@@ -4789,7 +4835,7 @@ window.TK_TIPS = {
             const notes = [];
             if (s.call && s.mode === '1p') notes.push(`buddy x${r.seen.buddy}, treats ${r.seen.treats}, saves ${r.stats.saves}`);
             if (s.call && s.mode === '2p') notes.push(`team-ups ${r.stats.teamups}`);
-            notes.push(`magic ${r.stats.specials}, rescue ${r.stats.rescues}, ouch ${r.stats.ouch}, coins ${r.coins}, rides ${r.stats.rides}`);
+            notes.push(`magic ${r.stats.specials}, rescue ${r.stats.rescues}, ouch ${r.stats.ouch}, coins ${r.coins}, rides ${r.stats.rides}` + (s.horse ? `, horses called ${r.stats.horseCalls}` : ''));
             log(pad(r.stage + (seed !== seeds[0] ? ` #${seed}` : ''), 14) + pad(s.name, 26) + pad(r.ok ? 'CLEAR' : 'FAIL', 7) +
               pad(r.time.toFixed(0) + 's', 7) + pad(r.stats.kos, 5) + pad(r.stats.deaths, 4) + pad(r.continues, 4) + notes.join(', '));
           }
@@ -4932,6 +4978,20 @@ window.TK_TIPS = {
     W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
     step(W, { mx: 1 }, 10); step(W, { jump: true }); step(W, {}, 40);
     ok('jump hops off, and the horse waits for you', !W.heroes[0].horse && W.items.some((i) => i.kind === 'horse'));
+    // R calls a horse: it gallops in from behind, you're on it; then a little wait before the next call
+    W = fresh();
+    step(W, { horse: true }); step(W, {}, 30);
+    const coming = W.items.some((i) => i.kind === 'horse' && i.coming);
+    step(W, { horse: true });
+    const twice = W.stats.horseCalls;
+    step(W, {}, 60 * 3);
+    ok('R calls a horse that gallops to you, and you ride it', coming && W.heroes[0].horse && count(W, 'horseCall') === 1, `coming ${coming}, riding ${W.heroes[0].horse}`);
+    ok('one horse at a time: pressing again while it comes does nothing', twice === 1, `calls ${twice}`);
+    W.heroes[0].horse = false;
+    step(W, { horse: true });
+    const waited = W.stats.horseCalls === 1;
+    step(W, {}, Math.ceil(60 * W.diff.horseCd)); step(W, { horse: true }); step(W, {}, 2);
+    ok(`then a wait before the next call (${window.TK_RULES.DIFF.easy.horseCd} s easy, ${window.TK_RULES.DIFF.normal.horseCd} s normal)`, waited && W.stats.horseCalls === 2, `calls ${W.stats.horseCalls}`);
 
     // the companion: arrives, treat heals, blocks EVERY hit while he's here, leaves after ~10 s
     W = fresh(); W.heroes[0].hp = 2;
@@ -4988,7 +5048,8 @@ window.TK_TIPS = {
    buttons for touch. Presses are latched until the game reads them, so a tap shorter than one frame still counts.
      Player 1: W A S D walk, F attack, G jump, H magic
      Player 2: arrows walk, J attack, K jump, L magic
-     T or Enter: call your brother (1 player) / team-up (2 players).  Double-tap left or right to dash.
+     T or Enter: call your brother (1 player) / team-up (2 players).  R / O: call a horse.
+     Double-tap left or right to dash.
      Attack + jump together: the rescue spin.
    In 1-player mode both key sets drive you, and Space jumps too. */
 (function () {
@@ -4996,12 +5057,12 @@ window.TK_TIPS = {
 
   const KEYS = {
     KeyA: [0, 'left'], KeyD: [0, 'right'], KeyW: [0, 'up'], KeyS: [0, 'down'],
-    KeyF: [0, 'attack'], KeyG: [0, 'jump'], KeyH: [0, 'special'], KeyT: [0, 'call'],
+    KeyF: [0, 'attack'], KeyG: [0, 'jump'], KeyH: [0, 'special'], KeyT: [0, 'call'], KeyR: [0, 'horse'],
     ArrowLeft: [1, 'left'], ArrowRight: [1, 'right'], ArrowUp: [1, 'up'], ArrowDown: [1, 'down'],
-    KeyJ: [1, 'attack'], KeyK: [1, 'jump'], KeyL: [1, 'special'], Enter: [1, 'call'], NumpadEnter: [1, 'call'],
+    KeyJ: [1, 'attack'], KeyK: [1, 'jump'], KeyL: [1, 'special'], Enter: [1, 'call'], NumpadEnter: [1, 'call'], KeyO: [1, 'horse'],
     Space: [0, 'jump'],
   };
-  const PRESS = { attack: 1, jump: 1, special: 1, call: 1 };
+  const PRESS = { attack: 1, jump: 1, special: 1, call: 1, horse: 1 };
   const DASH_GAP = 0.3; // seconds between two taps of the same direction
 
   let twoPlayer = false;
@@ -5054,7 +5115,7 @@ window.TK_TIPS = {
 
   // The controller for one brother this step. Clears the presses it reports.
   function read(slot) {
-    const out = { mx: 0, mz: 0, attack: false, jump: false, special: false, call: false, dash: 0 };
+    const out = { mx: 0, mz: 0, attack: false, jump: false, special: false, call: false, horse: false, dash: 0 };
     if (!enabled) return out;
     const srcs = twoPlayer ? [slot] : [0, 1];
     for (const s of srcs) {
@@ -7377,7 +7438,14 @@ window.TK_TIPS = {
       }
       const coin = R.COINS[it.kind];
       v.g.position.set(it.x, it.y + (v.horse || coin ? 0 : Math.sin(clock * 3 + it.id) * 0.06), it.z);
-      if (v.horse) M.animHorse(v.obj, clock * 2 + it.id, 0.15);
+      if (v.horse) {
+        if (it.coming) {
+          v.obj.rotation.y = (it.face || 1) > 0 ? -PI / 2 : PI / 2;
+          v.gallop = (v.gallop || 0) + (1 / 60) * 22;
+          M.animHorse(v.obj, v.gallop, 7);
+          if (Math.random() < 0.25) Fx.dust(it.x - (it.face || 1) * 0.7, it.z, 1);
+        } else M.animHorse(v.obj, clock * 2 + it.id, 0.15);
+      }
       if (coin) v.obj.material.rotation = Math.sin(clock * 8 + it.id) * 0.4;
       v.shadow.position.set(it.x, 0.02, it.z);
       if (v.glow) v.glow.material.opacity = 0.4 + Math.sin(clock * 5) * 0.2;
@@ -7570,7 +7638,11 @@ window.TK_TIPS = {
       setText(c.querySelector('.coins'), 'coins' + i, `🪙 ${h.coins}`);
       setText(c.querySelector('.orbs'), 'orbs' + i, `🔮 ${h.orbs}`);
       setText(c.querySelector('.wlv'), 'wlv' + i, '⚔️' + '★'.repeat(h.wlv));
-      c.querySelector('.horse').classList.toggle('on', !!h.horse);
+      const hc = c.querySelector('.horse');
+      const calling = W.items.some((it) => it.kind === 'horse' && it.coming && it.owner === h.id);
+      hc.classList.toggle('riding', !!h.horse);
+      hc.classList.toggle('wait', !h.horse && (h.horseCd > 0 || calling));
+      document.querySelectorAll(`.c${i} .hrs`).forEach((b) => b.classList.toggle('wait', !!h.horse || h.horseCd > 0 || calling));
       c.querySelector('.shield').classList.toggle('on', !!h.shield && !h.out);
       const out = c.querySelector('.out');
       out.classList.toggle('on', !!h.out && W.mode === '2p');
@@ -7820,6 +7892,7 @@ window.TK_TIPS = {
         case 'dismount': sfx('jump'); break;
         case 'park': break;
         case 'horseOff': addRunaway(e.x, e.z, -(e.face || 1), false); sfx('neigh'); break;
+        case 'horseCall': toast('HERE COMES A HORSE!', 'save', '🐎'); sfx('neigh'); sfx('clop'); break;
         case 'buddy':
           toast(`${heroName(e.who)} IS HERE! 🐎`, 'save');
           sfx('buddy');
@@ -8424,12 +8497,12 @@ Kit.help.setup({
     ['rescue spin (costs a heart)', 'F + G', 'J + K'],
     ['dash', 'double-tap A or D', 'double-tap ← or →'],
     ['walk into a soldier to grab him, swing to toss him', 'F', 'J'],
-    ['walk to a horse to ride it, jump to hop off', 'G', 'K'],
+    ['call a horse (walk to it to ride, jump to hop off)', 'R', 'O'],
     ['call your brother · team-up', 'T', 'Enter'],
     ['pause · sound', 'P or Esc · M', ''],
   ],
   note: 'In 1 player both sets of keys work, and Space jumps. With no 🔮 left, magic does the rescue spin.',
-  touch: 'Joystick, ⚔️ SWING, ⬆️ JUMP and ✨ MAGIC. Tap your brother\'s face to call him.',
+  touch: 'Joystick, ⚔️ SWING, ⬆️ JUMP, ✨ MAGIC and 🐎 HORSE. Tap your brother\'s face to call him.',
 });
 
 </script>
@@ -8505,8 +8578,8 @@ Kit.help.setup({
     'Walk into a soldier to grab him, then ⚔️ ⚔️ ⚔️ to toss him!': '走到士兵身上就能抓住他，再点 ⚔️ ⚔️ ⚔️ 把他扔出去！',
     'H = magic! It uses a 🔮. Press T to call your brother!': 'H = 法术！会用掉一个 🔮。按 T 叫兄弟来帮忙！',
     "Tap ✨ for magic! It uses a 🔮. Tap your brother's face to call him!": '点 ✨ 放法术！会用掉一个 🔮。点兄弟的头像叫他来帮忙！',
-    'A horse! Walk to it to ride. G hops off.': '有马！走过去就能骑上。按 G 跳下来。',
-    'A horse! Walk to it to ride. ⬆️ hops off.': '有马！走过去就能骑上。点 ⬆️ 跳下来。',
+    'A horse! Walk to it to ride, G hops off. Press R any time to call one.': '有马！走过去就能骑上，按 G 跳下来。随时按 R 都能叫一匹马来。',
+    'A horse! Walk to it to ride, ⬆️ hops off. Tap 🐎 any time to call one.': '有马！走过去就能骑上，点 ⬆️ 跳下来。随时点 🐎 都能叫一匹马来。',
     'Player 1: W A S D and F. Player 2: the arrows and J.': '1 号玩家：W A S D 和 F。2 号玩家：方向键和 J。',
     'Each player has a joystick and ⚔️ to swing!': '每个玩家都有一个摇杆和 ⚔️ 按钮！',
     'H or L = magic! It uses a 🔮. T = TEAM-UP!': 'H 或 L = 法术！会用掉一个 🔮。T = 合体必杀！',
@@ -8560,14 +8633,14 @@ Kit.help.setup({
     '⭐ score': '⭐ 分数', '🪙 coins': '🪙 金币', '💫 soldiers sent home': '💫 送回家的士兵', '⏱️ time': '⏱️ 时间',
     '🛡️ saves': '🛡️ 保护', '🤜🤛 team-ups': '🤜🤛 合体必杀',
     // touch buttons
-    'MAGIC': '法术', 'JUMP': '跳', 'SWING': '挥',
+    'MAGIC': '法术', 'JUMP': '跳', 'SWING': '挥', 'HORSE': '叫马', 'call a horse': '叫一匹马', 'HERE COMES A HORSE!': '马儿来啦！',
     // the ? panel
     'Player 1': '1 号玩家', 'Player 2': '2 号玩家', 'swing your weapon': '挥武器', 'jump (jump + swing = flying kick)': '跳（跳 + 挥 = 飞踢）',
     'magic (uses a 🔮)': '法术（用一个 🔮）', 'rescue spin (costs a heart)': '救命旋风（用一颗心）',
     'walk into a soldier to grab him, swing to toss him': '走到士兵身上抓住他，再挥武器把他扔出去',
-    'walk to a horse to ride it, jump to hop off': '走到马旁边就能骑，跳一下就下马', 'call your brother · team-up': '叫兄弟 · 合体必杀',
+    'call a horse (walk to it to ride, jump to hop off)': '叫一匹马（走过去就能骑，跳一下就下马）', 'call your brother · team-up': '叫兄弟 · 合体必杀',
     'In 1 player both sets of keys work, and Space jumps. With no 🔮 left, magic does the rescue spin.': '1 个人玩时两组按键都能用，空格键也能跳。没有 🔮 了，法术键会放救命旋风。',
-    "Joystick, ⚔️ SWING, ⬆️ JUMP and ✨ MAGIC. Tap your brother's face to call him.": '摇杆、⚔️ 挥、⬆️ 跳和 ✨ 法术。点兄弟的头像叫他来帮忙。',
+    "Joystick, ⚔️ SWING, ⬆️ JUMP, ✨ MAGIC and 🐎 HORSE. Tap your brother's face to call him.": '摇杆、⚔️ 挥、⬆️ 跳、✨ 法术和 🐎 叫马。点兄弟的头像叫他来帮忙。',
   });
 
   const tr = (dict, s) => dict[s] || s;
