@@ -24,6 +24,7 @@
     'ZAP!': ['#ffe14d', '#fffbd0', '#3a5aff'], 'FWOOSH!': ['#ff6a1f', '#ffd400', '#ffffff'], 'THWIP!': ['#ffd400', '#ffffff', '#e8203a'],
     'SHING!': ['#7dff9a', '#e8fff0', '#1f7a3a'], 'WHOA!': ['#c58a4a', '#ffd9a0', '#ffffff'], 'CRACK!': ['#c87a4a', '#ffd9b0', '#ffffff'],
     'PERFECT!': ['#ffd400', '#ff8a1f', '#ffffff'], 'LEVEL UP!': ['#7dff5a', '#ffffff', '#1f7a3a'],
+    'BUMP!': ['#ffb070', '#fff0d8', '#a0402a'], 'GOTCHA!': ['#ffd400', '#ffffff', '#c0302a'],
   };
 
   // Chinese words need a font that has them (Bungee doesn't).

@@ -16,13 +16,26 @@
     KeyJ: [1, 'attack'], KeyK: [1, 'jump'], KeyL: [1, 'special'], Enter: [1, 'call'], NumpadEnter: [1, 'call'], KeyO: [1, 'horse'],
     Space: [0, 'jump'],
   };
-  const PRESS = { attack: 1, jump: 1, special: 1, call: 1, horse: 1 };
+  const PRESS = { attack: 1, jump: 1, special: 1, call: 1, horse: 1, rescue: 1 };
   const DASH_GAP = 0.3; // seconds between two taps of the same direction
 
   let twoPlayer = false;
   let enabled = true;
   const held = [{}, {}];       // [side][key code] = action
   const latched = [{}, {}];    // [side][action] = true
+  const pressing = [{}, {}];   // [side][action] = true while that key or button is held down
+
+  // Swing + jump together (F + G, J + K, or ⚔️ + ⬆️) is the rescue spin. Nobody presses two keys inside the same
+  // 1/60 s, so the second key of the pair counts while the first one is still held down.
+  function hit(side, act) {
+    const other = act === 'attack' ? 'jump' : act === 'jump' ? 'attack' : null;
+    if (other && pressing[side][other]) {
+      latched[side].rescue = true;
+      latched[side][other] = false;
+      return;
+    }
+    latched[side][act] = true;
+  }
   const lastTap = [{}, {}];    // [side][left|right] = time
   const dash = [0, 0];
   const sticks = [{ x: 0, y: 0, on: false }, { x: 0, y: 0, on: false }];
@@ -41,12 +54,17 @@
     let [side, act] = m;
     if (e.code === 'Space' && twoPlayer) return false;
     if (down) {
-      if (PRESS[act]) { if (!e.repeat) latched[side][act] = true; }
-      else {
+      if (PRESS[act]) {
+        if (!e.repeat) hit(side, act);
+        pressing[side][act] = true;
+      } else {
         if (!held[side][e.code] && !e.repeat && (act === 'left' || act === 'right')) tap(side, act);
         held[side][e.code] = act;
       }
-    } else delete held[side][e.code];
+    } else {
+      delete held[side][e.code];
+      if (PRESS[act]) pressing[side][act] = false;
+    }
     return true;
   }
 
@@ -60,6 +78,7 @@
     for (const s of [0, 1]) {
       for (const k in held[s]) delete held[s][k];
       for (const k in latched[s]) delete latched[s][k];
+      for (const k in pressing[s]) delete pressing[s][k];
       sticks[s].x = sticks[s].y = 0;
       sticks[s].on = false;
       dash[s] = 0;
@@ -69,7 +88,7 @@
 
   // The controller for one brother this step. Clears the presses it reports.
   function read(slot) {
-    const out = { mx: 0, mz: 0, attack: false, jump: false, special: false, call: false, horse: false, dash: 0 };
+    const out = { mx: 0, mz: 0, attack: false, jump: false, special: false, call: false, horse: false, rescue: false, dash: 0 };
     if (!enabled) return out;
     const srcs = twoPlayer ? [slot] : [0, 1];
     for (const s of srcs) {
@@ -143,11 +162,12 @@
   function bindButton(el, side, act) {
     const down = (e) => {
       e.preventDefault();
-      latched[side][act] = true;
+      hit(side, act);
+      pressing[side][act] = true;
       el.classList.add('down');
       if (window.TKGame) window.TKGame.gesture();
     };
-    const up = () => el.classList.remove('down');
+    const up = () => { el.classList.remove('down'); pressing[side][act] = false; };
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointerup', up);
     el.addEventListener('pointercancel', up);

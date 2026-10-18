@@ -441,6 +441,15 @@
       if (W.t > (mem.nextBop || 0)) { inp.attack = true; mem.nextBop = W.t + 0.2; }
       return inp;
     }
+    // dragging a soldier from the saddle: gallop with him a moment, then fling him
+    if (h.drag) {
+      mem.dragSince = mem.dragSince || W.t;
+      if (W.t - mem.dragSince > 1.2) { mem.dragSince = 0; inp.attack = true; return inp; }
+      inp.mx = h.x < (L + R) / 2 ? 1 : -1;
+      inp.mz = Math.sin(W.t * 2) * 0.5;
+      return inp;
+    }
+    mem.dragSince = 0;
     // a "little kid" autopilot: slow to react, mashes now and then, never dodges or uses magic
     if (opts.kid) {
       if (W.t < (mem.daydream || 0)) return inp;
@@ -482,7 +491,7 @@
     const goody = W.items.find((it) => (it.kind === 'up' || it.kind === 'orb') && onScreen(it) && it.y < 0.3);
     if (goody && close === 0) return Object.assign(inp, steer(h, goody.x, goody.z, 0.2));
     // a horse! hop on (not in the middle of a crowd)
-    const horse = !h.horse && !opts.kid && W.items.find((it) => it.kind === 'horse' && onScreen(it) && (!it.coming || it.owner === h.id));
+    const horse = !h.horse && !opts.kid && W.items.find((it) => it.kind === 'horse' && onScreen(it) && it.left !== h.id && (!it.coming || it.owner === h.id));
     if (horse && close === 0 && Math.abs(horse.x - h.x) < 6) return Object.assign(inp, steer(h, horse.x, horse.z, 0.2));
     // chests and jars in reach
     if (!foes.length) {

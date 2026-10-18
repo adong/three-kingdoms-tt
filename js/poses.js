@@ -182,6 +182,8 @@
     if (f.horse && ['idle', 'walk', 'land', 'run', 'hurt'].includes(f.state)) {
       stance(T, style, time);
       rider(T);
+      // holding a soldier by the collar beside the horse
+      if (f.drag) Object.assign(T, { la: 0.95 + Math.sin(time * 12) * 0.1, laz: 0.15, twist: 0.25 });
       drive(p, T, k);
       return out;
     }
@@ -341,6 +343,16 @@
         p.legR.rotation.x += (-0.2 - p.legR.rotation.x) * k;
       }
     } else drive(p, T, k);
+    // on a horse, whatever the arms do, the legs stay astride the saddle (hello, treats, magic from the saddle)
+    if (f.horse && f.state !== 'celebrate') {
+      const R = base();
+      rider(R);
+      p.legL.rotation.x += (R.ll - p.legL.rotation.x) * k;
+      p.legR.rotation.x += (R.rl - p.legR.rotation.x) * k;
+      p.legL.rotation.z += (R.llz - p.legL.rotation.z) * k;
+      p.legR.rotation.z += (R.rlz - p.legR.rotation.z) * k;
+      p.rig.position.y += (R.rigY - p.rig.position.y) * k;
+    }
     return out;
   }
 

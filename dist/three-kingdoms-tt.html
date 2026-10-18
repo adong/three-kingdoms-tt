@@ -2042,6 +2042,10 @@ window.TK_TITLE = {
     bop:      { len: 0.24, at: 0.08, until: 0.12, dmg: 5, word: 'BOP!' },           // bop while holding someone
     toss:     { len: 0.42, dmg: 12, hitOthers: 10, speed: 8, word: 'WHEE!' },        // throwing someone you're holding
     trample:  { dmg: 8, word: 'CLIP-CLOP!' },                                         // running into them on a horse
+    // on a horse, swing right next to a soldier: scoop him up and he dangles beside the horse. Every `every` s of
+    // galloping is a BUMP! (dmg); anyone he's swung into gets bowled over (hitOthers). Swing again, or after `max` s,
+    // to fling him (fling damage, speed). reach/depth: how close he has to be to scoop him.
+    drag:     { reach: 1.4, depth: 0.6, every: 0.35, dmg: 6, hitOthers: 10, fling: 12, speed: 9, max: 3.0, word: 'BUMP!' },
   };
 
   // Chests hold a weapon upgrade: level 1 wood, 2 silver, 3 gold. Each level hits harder and a little further.
@@ -2853,7 +2857,13 @@ window.TK_TIPS = {
       }
       return;
     }
-    if (h.freeze > 0) { h.freeze -= DT; return; }
+    if (h.freeze > 0) {
+      // presses during the little hit-pause aren't lost: they wait for the next step
+      h.freeze -= DT;
+      for (const k of ['attack', 'jump', 'special', 'rescue']) if (inp[k]) (h.buf = h.buf || {})[k] = true;
+      return;
+    }
+    if (h.buf) { inp = Object.assign({}, inp, h.buf); h.buf = null; }
     h.st += DT;
     h.inv = Math.max(0, h.inv - DT);
     h.flash = Math.max(0, h.flash - DT);
@@ -2861,6 +2871,7 @@ window.TK_TIPS = {
     h.comboT += DT;
     h.shield = W.mode === '1p' && buddyGuards(W);
     fighterBody(W, h, inp);
+    if (h.drag) dragStep(W, h);
     if (h.kind === 'hero') {
       clampToView(W, h);
       pickups(W, h);
@@ -2870,6 +2881,12 @@ window.TK_TIPS = {
   // Movement and moves shared by the heroes and the companion. inp is the controller (or the AI) for this step.
   function fighterBody(W, h, inp) {
     const D = h.def;
+    // the rescue spin (swing + jump together) works mid-swing, while holding someone, or while being bonked:
+    // that's when you need it
+    if (h.kind === 'hero' && (inp.rescue || (inp.attack && inp.jump)) && RESCUE_FROM.includes(h.state)) {
+      if (h.grab) { const g = h.grab; g.heldBy = null; g.state = 'hurt'; g.st = 0; g.stun = 0.3; h.grab = null; }
+      startSpecial(W, h, true);
+    }
     switch (h.state) {
       case 'enter': {
         // walking in from the left at the start of a stage
@@ -2921,6 +2938,8 @@ window.TK_TIPS = {
     }
   }
 
+  const RESCUE_FROM = ['idle', 'walk', 'run', 'land', 'attack', 'hurt', 'grab', 'toss'];
+
   function idle(h) {
     h.state = 'idle';
     h.st = 0;
@@ -2931,13 +2950,19 @@ window.TK_TIPS = {
   function ground(W, h, inp) {
     const D = h.def;
     const H = W.R.HORSE;
-    if (h.kind === 'hero' && (inp.special || (inp.attack && inp.jump))) return startSpecial(W, h, inp.attack && inp.jump && !inp.special);
+    if (h.kind === 'hero' && inp.special) return startSpecial(W, h, false);
     if (inp.jump) {
       if (h.horse) return dismount(W, h, true);
       return startJump(W, h, inp);
     }
     if (inp.attack) {
-      if (h.horse) return startMove(W, h, 'ride', W.R.MOVES.ride);
+      if (h.horse) {
+        if (h.drag) return fling(W, h);
+        const D = W.R.MOVES.drag;
+        const e = h.kind === 'hero' && W.enemies.find((o) => grabbable(o) && (o.x - h.x) * h.face > 0.2 && (o.x - h.x) * h.face < D.reach + o.r && Math.abs(o.z - h.z) < D.depth);
+        if (e) return startDrag(W, h, e);
+        return startMove(W, h, 'ride', W.R.MOVES.ride);
+      }
       if (h.state === 'run') return startMove(W, h, 'dashHit', W.R.MOVES.dashHit);
       return comboAttack(W, h);
     }
@@ -2993,19 +3018,31 @@ window.TK_TIPS = {
     h.contact = 0;
     W.stats.rides++;
     ev(W, 'mount', { who: h.who, x: it.x, z: it.z });
+    if (h.kind === 'hero') buddyRides(W, h);
   }
 
-  // Off the horse: hop off (it waits for you), or get knocked off (it trots home).
+  // When you ride, your brother rides too: he keeps (or whistles up) his little white horse for the rest of his visit.
+  function buddyRides(W, h) {
+    const b = W.buddy;
+    if (W.mode !== '1p' || !b || !h.horse || b.horse || ['bye', 'leave', 'celebrate'].includes(b.state)) return;
+    b.horse = true;
+    if (b.state !== 'bEnter') ev(W, 'buddyMount', { who: b.who, x: b.x, z: b.z });
+  }
+
+  // Off the horse: hop off (it waits for you), or get knocked off (it trots home). A horse you hopped off waits
+  // until you've stepped away from it before you can climb back on, so you don't land straight back in the saddle.
   function dismount(W, h, hop) {
+    if (h.drag) dropDrag(W, h);
     h.horse = false;
     if (hop) {
       const it = spawnItem(W, 'horse', h.x, h.z, false);
       it.face = h.face;
+      it.left = h.id;
       h.state = 'jump';
       h.st = 0;
       h.vy = 5;
       h.y = W.R.HORSE.height * 0.6;
-      h.vx = -h.face * 1.5;
+      h.vx = -h.face * 2.0;
       h.vz = 0;
       h.move = null;
       h.kicked = true;
@@ -3029,8 +3066,96 @@ window.TK_TIPS = {
     return true;
   }
 
+  // On a horse, swing right next to a soldier to scoop him up by the collar: he dangles beside the horse kicking
+  // his legs, every bump of the gallop costs him (BUMP!), and he bowls over anyone he's swung into. Swing again (or
+  // after a few seconds) to fling him away. Silly, not rough: he lands dizzy like everyone else.
+  function startDrag(W, h, e) {
+    h.drag = e;
+    h.dragT = 0;
+    h.dragBump = 0;
+    e.state = 'held';
+    e.st = 0;
+    e.heldBy = h;
+    e.face = -h.face;
+    e.hitIds = new Set([e.id]);
+    ev(W, 'scoop', { who: h.who, x: e.x, y: 1.6, z: e.z });
+  }
+
+  function dragStep(W, h) {
+    const e = h.drag;
+    if (!e || e.gone || e.state !== 'held' || e.heldBy !== h || !h.horse || !standing(h)) return dropDrag(W, h);
+    const D = W.R.MOVES.drag;
+    const moving = Math.hypot(h.vx, h.vz) > 1;
+    h.dragT += DT;
+    e.x = clamp(h.x + h.face * 0.85, viewL(W), viewR(W));
+    e.z = clamp(h.z + 0.35, W.zMin, W.zMax);
+    e.y = 0.3 + (moving ? Math.abs(Math.sin(W.t * 12)) * 0.18 : 0);
+    if (moving) {
+      h.dragBump += DT;
+      if (h.dragBump >= D.every) {
+        h.dragBump = 0;
+        e.hp -= D.dmg * W.R.WEAPON_LEVEL.dmg[(h.wlv || 1) - 1];
+        e.flash = 0.15;
+        e.barT = 2.2;
+        h.score += 10;
+        W.stats.hits++;
+        W.stats.bumps = (W.stats.bumps || 0) + 1;
+        ev(W, 'hit', { x: e.x, y: e.y + 1.0, z: e.z, word: D.word, big: false, by: h.who });
+        if (e.hp <= 0) return fling(W, h);
+      }
+      // swung into another soldier: STRIKE!
+      for (const o of W.enemies) {
+        if (o === e || e.hitIds.has(o.id) || !hittable(W, o)) continue;
+        if (Math.abs(o.x - e.x) < 0.8 && Math.abs(o.z - e.z) < 0.6) {
+          e.hitIds.add(o.id);
+          damageEnemy(W, o, D.hitOthers, { knock: !o.boss, dir: h.face, word: 'STRIKE!', big: true, by: h });
+        }
+      }
+    }
+    if (h.dragT > D.max) fling(W, h);
+  }
+
+  // Let go with a big swing: he flies off and bowls over anyone he lands on (like a toss).
+  function fling(W, h) {
+    const e = h.drag;
+    const D = W.R.MOVES.drag;
+    h.drag = null;
+    if (!e || e.gone || e.heldBy !== h) return;
+    e.heldBy = null;
+    e.hp -= D.fling;
+    e.flash = 0.2;
+    e.barT = 2;
+    e.x = clamp(h.x + h.face * 1.0, viewL(W), viewR(W));
+    e.y = 0.9;
+    e.state = 'down';
+    e.st = 0;
+    e.thrown = true;
+    e.thrownBy = h;
+    e.hitIds = new Set([e.id]);
+    e.vx = h.face * D.speed;
+    e.vy = 4.6;
+    h.score += 30;
+    W.stats.hits++;
+    if (e.hp <= 0) { e.hp = 0; beaten(W, e, h.face); }
+    ev(W, 'toss', { who: h.who, x: e.x, y: 1.4, z: e.z, dir: h.face, word: 'WHEE!' });
+  }
+
+  // Dropped (you got bumped, hopped off, or the stage ended): he lands on his feet, a bit dizzy.
+  function dropDrag(W, h) {
+    const e = h.drag;
+    h.drag = null;
+    if (!e || e.gone || e.heldBy !== h) return;
+    e.heldBy = null;
+    e.state = 'hurt';
+    e.st = 0;
+    e.stun = 0.4;
+    e.y = 0;
+    e.vx = e.vz = 0;
+  }
+
   // Step down for magic or a team-up: the horse waits right behind you.
   function parkHorse(W, h) {
+    if (h.drag) dropDrag(W, h);
     h.horse = false;
     const it = spawnItem(W, 'horse', clamp(h.x - h.face * 0.7, viewL(W), viewR(W)), h.z, false);
     it.face = h.face;
@@ -3403,7 +3528,7 @@ window.TK_TIPS = {
       W.buddy = {
         id: W.nextId++, kind: 'buddy', who, slot: 1, def: W.R.HEROES[who],
         x: W.cam.x - W.halfW - 0.6, y: 0, z: clamp(h.z + 0.6, W.zMin, W.zMax), vx: 0, vy: 0, vz: 0, face: 1, r: 0.35, scale: 1,
-        hp: 1, maxHp: 1, state: 'bEnter', st: 0, move: null, combo: 0, comboT: 9, queued: false, wlv: 1,
+        hp: 1, maxHp: 1, state: 'bEnter', st: 0, move: null, combo: 0, comboT: 9, queued: false, wlv: 1, horse: !!h.horse, tramp: {},
         grab: null, bops: 0, bopT: -1, contact: 0, inv: 99, freeze: 0, flash: 0, wantTreat: 1, score: 0,
       };
       ev(W, 'buddy', { who, x: W.buddy.x, z: W.buddy.z });
@@ -3411,6 +3536,7 @@ window.TK_TIPS = {
       W.buddy.wantTreat++;
       if (W.buddy.state === 'bye' || W.buddy.state === 'leave') { W.buddy.state = 'bGive'; W.buddy.st = 0; }
       ev(W, 'buddyAgain', { who: W.buddy.who });
+      buddyRides(W, h);
     }
     return true;
   }
@@ -3437,7 +3563,7 @@ window.TK_TIPS = {
       case 'bEnter': {
         // he gallops in on a little horse, then hops off
         const tx = Math.max(viewL(W) + 1, h.x - 1.6);
-        if (run(tx, h.z + (h.z > W.zMin + 1 ? -0.7 : 0.7), b.def.run * 1.3) || b.st > 2.5) { b.state = 'hello'; b.st = 0; b.face = 1; ev(W, 'buddyHop', { who: b.who, x: b.x, z: b.z }); }
+        if (run(tx, h.z + (h.z > W.zMin + 1 ? -0.7 : 0.7), b.def.run * 1.3) || b.st > 2.5) { b.state = 'hello'; b.st = 0; b.face = 1; if (!b.horse) ev(W, 'buddyHop', { who: b.who, x: b.x, z: b.z }); }
         break;
       }
       case 'hello':
@@ -3630,6 +3756,7 @@ window.TK_TIPS = {
   }
 
   function knockDown(W, f, dir, ko) {
+    if (f.drag) dropDrag(W, f);
     if (f.grab) {
       const g = f.grab;
       g.heldBy = null;
@@ -3816,7 +3943,7 @@ window.TK_TIPS = {
         h.score += 50;
         ev(W, 'eat', { who: h.who, kind: it.kind, x: it.x, z: it.z, heal });
       } else if (it.kind === 'horse') {
-        if (!h.horse && h.state !== 'attack' && !h.grab) mount(W, h, it);
+        if (!h.horse && h.state !== 'attack' && !h.grab && it.left !== h.id) mount(W, h, it);
       } else if (it.kind === 'up') {
         it.gone = true;
         if (h.wlv < R.WEAPON_LEVEL.max) h.wlv++;
@@ -3865,6 +3992,11 @@ window.TK_TIPS = {
         it.z = clamp(it.z + (dz / d) * sp, W.zMin, W.zMax);
         if (Math.abs(dx) > 0.05) it.face = sign(dx);
         continue;
+      }
+      // a horse you hopped off is yours to climb on again once you've stepped away from it
+      if (it.left) {
+        const o = W.heroes.find((x) => x.id === it.left);
+        if (!o || !activeHero(o) || Math.abs(o.x - it.x) > 1.4 || Math.abs(o.z - it.z) > 0.8) it.left = null;
       }
       // coins fly into the nearest hero's pocket by themselves
       if (isCoin(it) && it.t > 0.55 && W.phase !== 'celebrate' && W.phase !== 'done') {
@@ -3937,7 +4069,7 @@ window.TK_TIPS = {
         break;
       case 'held':
         e.vx = e.vz = 0;
-        if (!e.heldBy || e.heldBy.grab !== e) { e.heldBy = null; e.state = 'hurt'; e.st = 0; e.stun = 0.2; }
+        if (!e.heldBy || (e.heldBy.grab !== e && e.heldBy.drag !== e)) { e.heldBy = null; e.state = 'hurt'; e.st = 0; e.stun = 0.2; e.y = 0; }
         break;
       case 'down': fall(W, e); break;
       case 'lying':
@@ -4141,6 +4273,7 @@ window.TK_TIPS = {
     W.pending = [];
     for (const h of W.heroes) {
       if (h.grab) { h.grab.heldBy = null; h.grab = null; if (h.state === 'grab') idle(h); }
+      if (h.drag) dropDrag(W, h);
       if (h.ko) { h.ko = false; h.hp = Math.max(1, h.hp); if (h.state === 'dizzy') { h.state = 'getup'; h.st = 0; } }
     }
     ev(W, 'clear', { bonus: !!W.bonus });
@@ -4178,6 +4311,7 @@ window.TK_TIPS = {
           };
         }
         W.buddy.state = 'celebrate';
+        W.buddy.horse = false;
         W.buddy.st = 0;
         W.buddy.y = 0;
       }
@@ -4685,6 +4819,15 @@ window.TK_TIPS = {
       if (W.t > (mem.nextBop || 0)) { inp.attack = true; mem.nextBop = W.t + 0.2; }
       return inp;
     }
+    // dragging a soldier from the saddle: gallop with him a moment, then fling him
+    if (h.drag) {
+      mem.dragSince = mem.dragSince || W.t;
+      if (W.t - mem.dragSince > 1.2) { mem.dragSince = 0; inp.attack = true; return inp; }
+      inp.mx = h.x < (L + R) / 2 ? 1 : -1;
+      inp.mz = Math.sin(W.t * 2) * 0.5;
+      return inp;
+    }
+    mem.dragSince = 0;
     // a "little kid" autopilot: slow to react, mashes now and then, never dodges or uses magic
     if (opts.kid) {
       if (W.t < (mem.daydream || 0)) return inp;
@@ -4726,7 +4869,7 @@ window.TK_TIPS = {
     const goody = W.items.find((it) => (it.kind === 'up' || it.kind === 'orb') && onScreen(it) && it.y < 0.3);
     if (goody && close === 0) return Object.assign(inp, steer(h, goody.x, goody.z, 0.2));
     // a horse! hop on (not in the middle of a crowd)
-    const horse = !h.horse && !opts.kid && W.items.find((it) => it.kind === 'horse' && onScreen(it) && (!it.coming || it.owner === h.id));
+    const horse = !h.horse && !opts.kid && W.items.find((it) => it.kind === 'horse' && onScreen(it) && it.left !== h.id && (!it.coming || it.owner === h.id));
     if (horse && close === 0 && Math.abs(horse.x - h.x) < 6) return Object.assign(inp, steer(h, horse.x, horse.z, 0.2));
     // chests and jars in reach
     if (!foes.length) {
@@ -4999,6 +5142,16 @@ window.TK_TIPS = {
     step(W, { special: true }); step(W, {}, 50);
     ok('rescue spin with no 🔮: knocks back all around, never takes the last heart', W.heroes[0].hp === 1 && ring.every((x) => x.state !== 'idle'), `hp ${W.heroes[0].hp}`);
 
+    // swing + jump pressed a few frames apart (as fingers do), mid-swing or while bonked: still the rescue spin
+    W = fresh(); W.heroes[0].orbs = 3;
+    const r1 = [foe(W, 'straw', 1.2), foe(W, 'straw', -1.2)];
+    step(W, { attack: true }); step(W, {}, 4); step(W, { rescue: true }); step(W, {}, 6);
+    const spun = W.heroes[0].state === 'special' && W.heroes[0].special === 'rescue';
+    step(W, {}, 50);
+    ok('F, then G a moment later (mid-swing): the rescue spin, and it knocks back all around', spun && r1.every((x) => x.state !== 'idle') && W.heroes[0].orbs === 3, `spun ${spun}, ${r1.map((x) => x.state).join()}`);
+    W = fresh(); W.heroes[0].state = 'hurt'; W.heroes[0].st = 0; W.heroes[0].stun = 0.38;
+    step(W, { rescue: true }); step(W, {}, 1);
+    ok('the rescue spin works while being bonked too', W.heroes[0].state === 'special' && W.heroes[0].special === 'rescue', `state ${W.heroes[0].state}`);
     // horses: walk on to ride, gallop into soldiers, a bump knocks you off but keeps your heart
     W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
     step(W, { mx: 1 }, 10);
@@ -5013,8 +5166,41 @@ window.TK_TIPS = {
     step(W, {}, 40);
     ok('a bump knocks you off the horse but you keep your heart', !W.heroes[0].horse && W.heroes[0].hp === hp0, `horse ${W.heroes[0].horse}, hp ${hp0}->${W.heroes[0].hp}`);
     W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
-    step(W, { mx: 1 }, 10); step(W, { jump: true }); step(W, {}, 40);
-    ok('jump hops off, and the horse waits for you', !W.heroes[0].horse && W.items.some((i) => i.kind === 'horse'));
+    step(W, { mx: 1 }, 10); step(W, { jump: true }); step(W, {}, 120);
+    const off = !W.heroes[0].horse && W.items.some((i) => i.kind === 'horse');
+    step(W, { mx: -1 }, 40); step(W, { mx: 1 }, 60);
+    ok('jump (G) hops off and you stay off; walk away and back to climb on again', off && W.heroes[0].horse, `off ${off}, back on ${W.heroes[0].horse}`);
+    // on a horse, swing next to a soldier: scoop him up, the gallop bumps him, he bowls over others, swing to fling
+    W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
+    step(W, { mx: 1 }, 10);
+    e = foe(W, 'straw', 1.0); e.hp = e.maxHp = 999;
+    step(W, { attack: true }); step(W, {}, 2);
+    const scooped = W.heroes[0].drag === e && e.state === 'held';
+    const other2 = foe(W, 'bot', 4.5, 0.35); other2.hp = 999;
+    step(W, { mx: 1 }, 90);
+    const bumps = W.stats.bumps || 0, hp1 = e.hp;
+    step(W, { attack: true }); step(W, {}, 30);
+    ok('on a horse, swing next to a soldier: scoop him up and every bump of the gallop hurts him', scooped && bumps >= 3 && hp1 < 999 - 15, `scooped ${scooped}, bumps ${bumps}, hp ${hp1}`);
+    ok('the soldier you drag bowls over others, and swinging again flings him', other2.hp < 999 && W.events.some((x) => x.type === 'toss') && !W.heroes[0].drag && e.state !== 'held', `other ${other2.hp}, state ${e.state}`);
+    W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
+    step(W, { mx: 1 }, 10);
+    e = foe(W, 'straw', 1.0);
+    step(W, { attack: true }); step(W, { mx: 1 }, 60 * 3);
+    ok('a dragged soldier is beaten after a few bumps (he never stays dangling)', (e.ko || e.gone) && !W.heroes[0].drag, `state ${e.state}, hp ${Math.round(e.hp)}`);
+    W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
+    step(W, { mx: 1 }, 10);
+    e = foe(W, 'straw', 1.0); e.hp = 999;
+    step(W, { attack: true }); step(W, {}, 2); step(W, { jump: true }); step(W, {}, 10);
+    ok('hop off while dragging: you let go and he lands on his feet', !W.heroes[0].drag && e.state !== 'held' && e.y === 0, `state ${e.state}, y ${e.y}`);
+    // your brother rides too
+    W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
+    step(W, { mx: 1 }, 10); step(W, { call: true }); step(W, {}, 240);
+    ok('call your brother while riding: he rides in and stays on his horse', W.buddy && W.buddy.horse && count(W, 'buddyHop') === 0 && W.stats.treats >= 1, `buddy ${W.buddy && W.buddy.state}, horse ${W.buddy && W.buddy.horse}`);
+    W = fresh(); step(W, { call: true }); step(W, {}, 200);
+    const onFoot = W.buddy && !W.buddy.horse;
+    S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, W.heroes[0].z, false); W.heroes[0].face = 1;
+    step(W, { mx: 1 }, 10); step(W, {}, 30);
+    ok('get on a horse while he is here: he gets on his too', onFoot && W.heroes[0].horse && W.buddy && W.buddy.horse && count(W, 'buddyMount') === 1, `onFoot ${onFoot}, hero ${W.heroes[0].horse}, buddy ${W.buddy && W.buddy.horse}`);
     // R calls a horse: it gallops in from behind, you're on it; then a little wait before the next call
     W = fresh();
     step(W, { horse: true }); step(W, {}, 30);
@@ -5099,13 +5285,26 @@ window.TK_TIPS = {
     KeyJ: [1, 'attack'], KeyK: [1, 'jump'], KeyL: [1, 'special'], Enter: [1, 'call'], NumpadEnter: [1, 'call'], KeyO: [1, 'horse'],
     Space: [0, 'jump'],
   };
-  const PRESS = { attack: 1, jump: 1, special: 1, call: 1, horse: 1 };
+  const PRESS = { attack: 1, jump: 1, special: 1, call: 1, horse: 1, rescue: 1 };
   const DASH_GAP = 0.3; // seconds between two taps of the same direction
 
   let twoPlayer = false;
   let enabled = true;
   const held = [{}, {}];       // [side][key code] = action
   const latched = [{}, {}];    // [side][action] = true
+  const pressing = [{}, {}];   // [side][action] = true while that key or button is held down
+
+  // Swing + jump together (F + G, J + K, or ⚔️ + ⬆️) is the rescue spin. Nobody presses two keys inside the same
+  // 1/60 s, so the second key of the pair counts while the first one is still held down.
+  function hit(side, act) {
+    const other = act === 'attack' ? 'jump' : act === 'jump' ? 'attack' : null;
+    if (other && pressing[side][other]) {
+      latched[side].rescue = true;
+      latched[side][other] = false;
+      return;
+    }
+    latched[side][act] = true;
+  }
   const lastTap = [{}, {}];    // [side][left|right] = time
   const dash = [0, 0];
   const sticks = [{ x: 0, y: 0, on: false }, { x: 0, y: 0, on: false }];
@@ -5124,12 +5323,17 @@ window.TK_TIPS = {
     let [side, act] = m;
     if (e.code === 'Space' && twoPlayer) return false;
     if (down) {
-      if (PRESS[act]) { if (!e.repeat) latched[side][act] = true; }
-      else {
+      if (PRESS[act]) {
+        if (!e.repeat) hit(side, act);
+        pressing[side][act] = true;
+      } else {
         if (!held[side][e.code] && !e.repeat && (act === 'left' || act === 'right')) tap(side, act);
         held[side][e.code] = act;
       }
-    } else delete held[side][e.code];
+    } else {
+      delete held[side][e.code];
+      if (PRESS[act]) pressing[side][act] = false;
+    }
     return true;
   }
 
@@ -5143,6 +5347,7 @@ window.TK_TIPS = {
     for (const s of [0, 1]) {
       for (const k in held[s]) delete held[s][k];
       for (const k in latched[s]) delete latched[s][k];
+      for (const k in pressing[s]) delete pressing[s][k];
       sticks[s].x = sticks[s].y = 0;
       sticks[s].on = false;
       dash[s] = 0;
@@ -5152,7 +5357,7 @@ window.TK_TIPS = {
 
   // The controller for one brother this step. Clears the presses it reports.
   function read(slot) {
-    const out = { mx: 0, mz: 0, attack: false, jump: false, special: false, call: false, horse: false, dash: 0 };
+    const out = { mx: 0, mz: 0, attack: false, jump: false, special: false, call: false, horse: false, rescue: false, dash: 0 };
     if (!enabled) return out;
     const srcs = twoPlayer ? [slot] : [0, 1];
     for (const s of srcs) {
@@ -5226,11 +5431,12 @@ window.TK_TIPS = {
   function bindButton(el, side, act) {
     const down = (e) => {
       e.preventDefault();
-      latched[side][act] = true;
+      hit(side, act);
+      pressing[side][act] = true;
       el.classList.add('down');
       if (window.TKGame) window.TKGame.gesture();
     };
-    const up = () => el.classList.remove('down');
+    const up = () => { el.classList.remove('down'); pressing[side][act] = false; };
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointerup', up);
     el.addEventListener('pointercancel', up);
@@ -5439,6 +5645,8 @@ window.TK_TIPS = {
     if (f.horse && ['idle', 'walk', 'land', 'run', 'hurt'].includes(f.state)) {
       stance(T, style, time);
       rider(T);
+      // holding a soldier by the collar beside the horse
+      if (f.drag) Object.assign(T, { la: 0.95 + Math.sin(time * 12) * 0.1, laz: 0.15, twist: 0.25 });
       drive(p, T, k);
       return out;
     }
@@ -5598,6 +5806,16 @@ window.TK_TIPS = {
         p.legR.rotation.x += (-0.2 - p.legR.rotation.x) * k;
       }
     } else drive(p, T, k);
+    // on a horse, whatever the arms do, the legs stay astride the saddle (hello, treats, magic from the saddle)
+    if (f.horse && f.state !== 'celebrate') {
+      const R = base();
+      rider(R);
+      p.legL.rotation.x += (R.ll - p.legL.rotation.x) * k;
+      p.legR.rotation.x += (R.rl - p.legR.rotation.x) * k;
+      p.legL.rotation.z += (R.llz - p.legL.rotation.z) * k;
+      p.legR.rotation.z += (R.rlz - p.legR.rotation.z) * k;
+      p.rig.position.y += (R.rigY - p.rig.position.y) * k;
+    }
     return out;
   }
 
@@ -6259,6 +6477,7 @@ window.TK_TIPS = {
     'ZAP!': ['#ffe14d', '#fffbd0', '#3a5aff'], 'FWOOSH!': ['#ff6a1f', '#ffd400', '#ffffff'], 'THWIP!': ['#ffd400', '#ffffff', '#e8203a'],
     'SHING!': ['#7dff9a', '#e8fff0', '#1f7a3a'], 'WHOA!': ['#c58a4a', '#ffd9a0', '#ffffff'], 'CRACK!': ['#c87a4a', '#ffd9b0', '#ffffff'],
     'PERFECT!': ['#ffd400', '#ff8a1f', '#ffffff'], 'LEVEL UP!': ['#7dff5a', '#ffffff', '#1f7a3a'],
+    'BUMP!': ['#ffb070', '#fff0d8', '#a0402a'], 'GOTCHA!': ['#ffd400', '#ffffff', '#c0302a'],
   };
 
   // Chinese words need a font that has them (Bungee doesn't).
@@ -7838,6 +8057,7 @@ window.TK_TIPS = {
         case 'runoff': Fx.floatUp(e.boss ? '🏳️' : '💦', e.x, 2.4, e.z, 0.6); sfx('runoff'); break;
         case 'poof': Fx.poof(e.x, 1.0 * (e.scale || 1), e.z, e.scale || 1); Fx.stars(e.x, 1.2, e.z, 6); sfx('poof'); break;
         case 'grab': sfx('grab'); break;
+        case 'scoop': Fx.pow(e.x, e.y, e.z, 'GOTCHA!', true); sfx('grab'); sfx('neigh'); break;
         case 'toss': Fx.pow(e.x, e.y, e.z, e.word, true); sfx('toss'); break;
         case 'swing': sfx('whoosh', e.big); break;
         case 'jump': sfx('jump'); break;
@@ -7951,6 +8171,7 @@ window.TK_TIPS = {
           popBud();
           break;
         case 'buddyHop': addRunaway(e.x, e.z, -1, true); break;
+        case 'buddyMount': toast(`${heroName(e.who)} RIDES TOO!`, 'save', '🐎'); sfx('neigh'); break;
         case 'buddyAgain': popBud(); sfx('click'); break;
         case 'treat': {
           const h = W.heroes[0];
@@ -8549,6 +8770,7 @@ Kit.help.setup({
     ['dash', 'double-tap A or D', 'double-tap ← or →'],
     ['walk into a soldier to grab him, swing to toss him', 'F', 'J'],
     ['call a horse (walk to it to ride, jump to hop off)', 'R', 'O'],
+    ['on a horse: swing next to a soldier to scoop him up, swing again to fling him', 'F', 'J'],
     ['call your brother · team-up', 'T', 'Enter'],
     ['pause · sound', 'P or Esc · M', ''],
   ],
@@ -8644,6 +8866,7 @@ Kit.help.setup({
     'SAVED!': '救啦！', 'POOF!': '噗！', 'BEEP!': '哔！', 'BOINK!': '啵嘤！', 'POKE!': '戳！', 'SWISH!': '唰！', 'FWIP!': '嗖！',
     'CLANG!': '当！', 'WHIRL!': '转转转！', 'CLIP-CLOP!': '嘚嘚！', 'ZAP!': '噼啪！', 'FWOOSH!': '呼啦！', 'THWIP!': '嗖嗖！',
     'SHING!': '锵！', 'WHOA!': '哇啊！', 'CRACK!': '咔嚓！', 'PERFECT!': '完美！', 'LEVEL UP!': '升级！',
+    'BUMP!': '颠一下！', 'GOTCHA!': '抓到啦！',
   };
   [STAGE, BOSS, BOSS_LINE, HERO, MAGIC, FOOD, STORY, TIP, BURST].forEach((d) => L.add(d));
 
@@ -8689,7 +8912,8 @@ Kit.help.setup({
     'Player 1': '1 号玩家', 'Player 2': '2 号玩家', 'swing your weapon': '挥武器', 'jump (jump + swing = flying kick)': '跳（跳 + 挥 = 飞踢）',
     'magic (uses a 🔮)': '法术（用一个 🔮）', 'rescue spin (costs a heart)': '救命旋风（用一颗心）',
     'walk into a soldier to grab him, swing to toss him': '走到士兵身上抓住他，再挥武器把他扔出去',
-    'call a horse (walk to it to ride, jump to hop off)': '叫一匹马（走过去就能骑，跳一下就下马）', 'call your brother · team-up': '叫兄弟 · 合体必杀',
+    'call a horse (walk to it to ride, jump to hop off)': '叫一匹马（走过去就能骑，跳一下就下马）',
+    'on a horse: swing next to a soldier to scoop him up, swing again to fling him': '骑马时：贴着士兵挥武器就能把他拎起来，再挥一下把他甩出去', 'call your brother · team-up': '叫兄弟 · 合体必杀',
     'In 1 player both sets of keys work, and Space jumps. With no 🔮 left, magic does the rescue spin.': '1 个人玩时两组按键都能用，空格键也能跳。没有 🔮 了，法术键会放救命旋风。',
     "Joystick, ⚔️ SWING, ⬆️ JUMP, ✨ MAGIC and 🐎 HORSE. Tap your brother's face to call him.": '摇杆、⚔️ 挥、⬆️ 跳、✨ 法术和 🐎 叫马。点兄弟的头像叫他来帮忙。',
   });
@@ -8705,6 +8929,7 @@ Kit.help.setup({
   L.rule(/^(\w+) IS HERE! 🐎$/, (m, w) => `${name(w)} 骑马来啦！🐎`);
   L.rule(/^(\w+) SAVED YOU! 🛡️$/, (m, w) => `${name(w)} 救了你！🛡️`);
   L.rule(/^(\w+) IS BACK! 💪$/, (m, w) => `${name(w)} 回来啦！💪`);
+  L.rule(/^(\w+) RIDES TOO!$/, (m, w) => `${name(w)} 也骑上马啦！`);
   L.rule(/^(\w+) IS OUT!$/, (m, w) => `${name(w)} 出局了！`);
   L.rule(/^BYE! (.+)$/, '拜拜！$1');
   L.rule(/^(.+) FROM (\w+)!$/, (m, item, w) => `${name(w)} 送来的${tr(FOOD, item)}！`);

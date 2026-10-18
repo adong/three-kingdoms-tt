@@ -231,6 +231,16 @@
     step(W, { special: true }); step(W, {}, 50);
     ok('rescue spin with no 🔮: knocks back all around, never takes the last heart', W.heroes[0].hp === 1 && ring.every((x) => x.state !== 'idle'), `hp ${W.heroes[0].hp}`);
 
+    // swing + jump pressed a few frames apart (as fingers do), mid-swing or while bonked: still the rescue spin
+    W = fresh(); W.heroes[0].orbs = 3;
+    const r1 = [foe(W, 'straw', 1.2), foe(W, 'straw', -1.2)];
+    step(W, { attack: true }); step(W, {}, 4); step(W, { rescue: true }); step(W, {}, 6);
+    const spun = W.heroes[0].state === 'special' && W.heroes[0].special === 'rescue';
+    step(W, {}, 50);
+    ok('F, then G a moment later (mid-swing): the rescue spin, and it knocks back all around', spun && r1.every((x) => x.state !== 'idle') && W.heroes[0].orbs === 3, `spun ${spun}, ${r1.map((x) => x.state).join()}`);
+    W = fresh(); W.heroes[0].state = 'hurt'; W.heroes[0].st = 0; W.heroes[0].stun = 0.38;
+    step(W, { rescue: true }); step(W, {}, 1);
+    ok('the rescue spin works while being bonked too', W.heroes[0].state === 'special' && W.heroes[0].special === 'rescue', `state ${W.heroes[0].state}`);
     // horses: walk on to ride, gallop into soldiers, a bump knocks you off but keeps your heart
     W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
     step(W, { mx: 1 }, 10);
@@ -245,8 +255,41 @@
     step(W, {}, 40);
     ok('a bump knocks you off the horse but you keep your heart', !W.heroes[0].horse && W.heroes[0].hp === hp0, `horse ${W.heroes[0].horse}, hp ${hp0}->${W.heroes[0].hp}`);
     W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
-    step(W, { mx: 1 }, 10); step(W, { jump: true }); step(W, {}, 40);
-    ok('jump hops off, and the horse waits for you', !W.heroes[0].horse && W.items.some((i) => i.kind === 'horse'));
+    step(W, { mx: 1 }, 10); step(W, { jump: true }); step(W, {}, 120);
+    const off = !W.heroes[0].horse && W.items.some((i) => i.kind === 'horse');
+    step(W, { mx: -1 }, 40); step(W, { mx: 1 }, 60);
+    ok('jump (G) hops off and you stay off; walk away and back to climb on again', off && W.heroes[0].horse, `off ${off}, back on ${W.heroes[0].horse}`);
+    // on a horse, swing next to a soldier: scoop him up, the gallop bumps him, he bowls over others, swing to fling
+    W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
+    step(W, { mx: 1 }, 10);
+    e = foe(W, 'straw', 1.0); e.hp = e.maxHp = 999;
+    step(W, { attack: true }); step(W, {}, 2);
+    const scooped = W.heroes[0].drag === e && e.state === 'held';
+    const other2 = foe(W, 'bot', 4.5, 0.35); other2.hp = 999;
+    step(W, { mx: 1 }, 90);
+    const bumps = W.stats.bumps || 0, hp1 = e.hp;
+    step(W, { attack: true }); step(W, {}, 30);
+    ok('on a horse, swing next to a soldier: scoop him up and every bump of the gallop hurts him', scooped && bumps >= 3 && hp1 < 999 - 15, `scooped ${scooped}, bumps ${bumps}, hp ${hp1}`);
+    ok('the soldier you drag bowls over others, and swinging again flings him', other2.hp < 999 && W.events.some((x) => x.type === 'toss') && !W.heroes[0].drag && e.state !== 'held', `other ${other2.hp}, state ${e.state}`);
+    W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
+    step(W, { mx: 1 }, 10);
+    e = foe(W, 'straw', 1.0);
+    step(W, { attack: true }); step(W, { mx: 1 }, 60 * 3);
+    ok('a dragged soldier is beaten after a few bumps (he never stays dangling)', (e.ko || e.gone) && !W.heroes[0].drag, `state ${e.state}, hp ${Math.round(e.hp)}`);
+    W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
+    step(W, { mx: 1 }, 10);
+    e = foe(W, 'straw', 1.0); e.hp = 999;
+    step(W, { attack: true }); step(W, {}, 2); step(W, { jump: true }); step(W, {}, 10);
+    ok('hop off while dragging: you let go and he lands on his feet', !W.heroes[0].drag && e.state !== 'held' && e.y === 0, `state ${e.state}, y ${e.y}`);
+    // your brother rides too
+    W = fresh(); S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, 0, false);
+    step(W, { mx: 1 }, 10); step(W, { call: true }); step(W, {}, 240);
+    ok('call your brother while riding: he rides in and stays on his horse', W.buddy && W.buddy.horse && count(W, 'buddyHop') === 0 && W.stats.treats >= 1, `buddy ${W.buddy && W.buddy.state}, horse ${W.buddy && W.buddy.horse}`);
+    W = fresh(); step(W, { call: true }); step(W, {}, 200);
+    const onFoot = W.buddy && !W.buddy.horse;
+    S.spawnItem(W, 'horse', W.heroes[0].x + 0.6, W.heroes[0].z, false); W.heroes[0].face = 1;
+    step(W, { mx: 1 }, 10); step(W, {}, 30);
+    ok('get on a horse while he is here: he gets on his too', onFoot && W.heroes[0].horse && W.buddy && W.buddy.horse && count(W, 'buddyMount') === 1, `onFoot ${onFoot}, hero ${W.heroes[0].horse}, buddy ${W.buddy && W.buddy.horse}`);
     // R calls a horse: it gallops in from behind, you're on it; then a little wait before the next call
     W = fresh();
     step(W, { horse: true }); step(W, {}, 30);

@@ -316,7 +316,13 @@
       }
       return;
     }
-    if (h.freeze > 0) { h.freeze -= DT; return; }
+    if (h.freeze > 0) {
+      // presses during the little hit-pause aren't lost: they wait for the next step
+      h.freeze -= DT;
+      for (const k of ['attack', 'jump', 'special', 'rescue']) if (inp[k]) (h.buf = h.buf || {})[k] = true;
+      return;
+    }
+    if (h.buf) { inp = Object.assign({}, inp, h.buf); h.buf = null; }
     h.st += DT;
     h.inv = Math.max(0, h.inv - DT);
     h.flash = Math.max(0, h.flash - DT);
@@ -324,6 +330,7 @@
     h.comboT += DT;
     h.shield = W.mode === '1p' && buddyGuards(W);
     fighterBody(W, h, inp);
+    if (h.drag) dragStep(W, h);
     if (h.kind === 'hero') {
       clampToView(W, h);
       pickups(W, h);
@@ -333,6 +340,12 @@
   // Movement and moves shared by the heroes and the companion. inp is the controller (or the AI) for this step.
   function fighterBody(W, h, inp) {
     const D = h.def;
+    // the rescue spin (swing + jump together) works mid-swing, while holding someone, or while being bonked:
+    // that's when you need it
+    if (h.kind === 'hero' && (inp.rescue || (inp.attack && inp.jump)) && RESCUE_FROM.includes(h.state)) {
+      if (h.grab) { const g = h.grab; g.heldBy = null; g.state = 'hurt'; g.st = 0; g.stun = 0.3; h.grab = null; }
+      startSpecial(W, h, true);
+    }
     switch (h.state) {
       case 'enter': {
         // walking in from the left at the start of a stage
@@ -384,6 +397,8 @@
     }
   }
 
+  const RESCUE_FROM = ['idle', 'walk', 'run', 'land', 'attack', 'hurt', 'grab', 'toss'];
+
   function idle(h) {
     h.state = 'idle';
     h.st = 0;
@@ -394,13 +409,19 @@
   function ground(W, h, inp) {
     const D = h.def;
     const H = W.R.HORSE;
-    if (h.kind === 'hero' && (inp.special || (inp.attack && inp.jump))) return startSpecial(W, h, inp.attack && inp.jump && !inp.special);
+    if (h.kind === 'hero' && inp.special) return startSpecial(W, h, false);
     if (inp.jump) {
       if (h.horse) return dismount(W, h, true);
       return startJump(W, h, inp);
     }
     if (inp.attack) {
-      if (h.horse) return startMove(W, h, 'ride', W.R.MOVES.ride);
+      if (h.horse) {
+        if (h.drag) return fling(W, h);
+        const D = W.R.MOVES.drag;
+        const e = h.kind === 'hero' && W.enemies.find((o) => grabbable(o) && (o.x - h.x) * h.face > 0.2 && (o.x - h.x) * h.face < D.reach + o.r && Math.abs(o.z - h.z) < D.depth);
+        if (e) return startDrag(W, h, e);
+        return startMove(W, h, 'ride', W.R.MOVES.ride);
+      }
       if (h.state === 'run') return startMove(W, h, 'dashHit', W.R.MOVES.dashHit);
       return comboAttack(W, h);
     }
@@ -456,19 +477,31 @@
     h.contact = 0;
     W.stats.rides++;
     ev(W, 'mount', { who: h.who, x: it.x, z: it.z });
+    if (h.kind === 'hero') buddyRides(W, h);
   }
 
-  // Off the horse: hop off (it waits for you), or get knocked off (it trots home).
+  // When you ride, your brother rides too: he keeps (or whistles up) his little white horse for the rest of his visit.
+  function buddyRides(W, h) {
+    const b = W.buddy;
+    if (W.mode !== '1p' || !b || !h.horse || b.horse || ['bye', 'leave', 'celebrate'].includes(b.state)) return;
+    b.horse = true;
+    if (b.state !== 'bEnter') ev(W, 'buddyMount', { who: b.who, x: b.x, z: b.z });
+  }
+
+  // Off the horse: hop off (it waits for you), or get knocked off (it trots home). A horse you hopped off waits
+  // until you've stepped away from it before you can climb back on, so you don't land straight back in the saddle.
   function dismount(W, h, hop) {
+    if (h.drag) dropDrag(W, h);
     h.horse = false;
     if (hop) {
       const it = spawnItem(W, 'horse', h.x, h.z, false);
       it.face = h.face;
+      it.left = h.id;
       h.state = 'jump';
       h.st = 0;
       h.vy = 5;
       h.y = W.R.HORSE.height * 0.6;
-      h.vx = -h.face * 1.5;
+      h.vx = -h.face * 2.0;
       h.vz = 0;
       h.move = null;
       h.kicked = true;
@@ -492,8 +525,96 @@
     return true;
   }
 
+  // On a horse, swing right next to a soldier to scoop him up by the collar: he dangles beside the horse kicking
+  // his legs, every bump of the gallop costs him (BUMP!), and he bowls over anyone he's swung into. Swing again (or
+  // after a few seconds) to fling him away. Silly, not rough: he lands dizzy like everyone else.
+  function startDrag(W, h, e) {
+    h.drag = e;
+    h.dragT = 0;
+    h.dragBump = 0;
+    e.state = 'held';
+    e.st = 0;
+    e.heldBy = h;
+    e.face = -h.face;
+    e.hitIds = new Set([e.id]);
+    ev(W, 'scoop', { who: h.who, x: e.x, y: 1.6, z: e.z });
+  }
+
+  function dragStep(W, h) {
+    const e = h.drag;
+    if (!e || e.gone || e.state !== 'held' || e.heldBy !== h || !h.horse || !standing(h)) return dropDrag(W, h);
+    const D = W.R.MOVES.drag;
+    const moving = Math.hypot(h.vx, h.vz) > 1;
+    h.dragT += DT;
+    e.x = clamp(h.x + h.face * 0.85, viewL(W), viewR(W));
+    e.z = clamp(h.z + 0.35, W.zMin, W.zMax);
+    e.y = 0.3 + (moving ? Math.abs(Math.sin(W.t * 12)) * 0.18 : 0);
+    if (moving) {
+      h.dragBump += DT;
+      if (h.dragBump >= D.every) {
+        h.dragBump = 0;
+        e.hp -= D.dmg * W.R.WEAPON_LEVEL.dmg[(h.wlv || 1) - 1];
+        e.flash = 0.15;
+        e.barT = 2.2;
+        h.score += 10;
+        W.stats.hits++;
+        W.stats.bumps = (W.stats.bumps || 0) + 1;
+        ev(W, 'hit', { x: e.x, y: e.y + 1.0, z: e.z, word: D.word, big: false, by: h.who });
+        if (e.hp <= 0) return fling(W, h);
+      }
+      // swung into another soldier: STRIKE!
+      for (const o of W.enemies) {
+        if (o === e || e.hitIds.has(o.id) || !hittable(W, o)) continue;
+        if (Math.abs(o.x - e.x) < 0.8 && Math.abs(o.z - e.z) < 0.6) {
+          e.hitIds.add(o.id);
+          damageEnemy(W, o, D.hitOthers, { knock: !o.boss, dir: h.face, word: 'STRIKE!', big: true, by: h });
+        }
+      }
+    }
+    if (h.dragT > D.max) fling(W, h);
+  }
+
+  // Let go with a big swing: he flies off and bowls over anyone he lands on (like a toss).
+  function fling(W, h) {
+    const e = h.drag;
+    const D = W.R.MOVES.drag;
+    h.drag = null;
+    if (!e || e.gone || e.heldBy !== h) return;
+    e.heldBy = null;
+    e.hp -= D.fling;
+    e.flash = 0.2;
+    e.barT = 2;
+    e.x = clamp(h.x + h.face * 1.0, viewL(W), viewR(W));
+    e.y = 0.9;
+    e.state = 'down';
+    e.st = 0;
+    e.thrown = true;
+    e.thrownBy = h;
+    e.hitIds = new Set([e.id]);
+    e.vx = h.face * D.speed;
+    e.vy = 4.6;
+    h.score += 30;
+    W.stats.hits++;
+    if (e.hp <= 0) { e.hp = 0; beaten(W, e, h.face); }
+    ev(W, 'toss', { who: h.who, x: e.x, y: 1.4, z: e.z, dir: h.face, word: 'WHEE!' });
+  }
+
+  // Dropped (you got bumped, hopped off, or the stage ended): he lands on his feet, a bit dizzy.
+  function dropDrag(W, h) {
+    const e = h.drag;
+    h.drag = null;
+    if (!e || e.gone || e.heldBy !== h) return;
+    e.heldBy = null;
+    e.state = 'hurt';
+    e.st = 0;
+    e.stun = 0.4;
+    e.y = 0;
+    e.vx = e.vz = 0;
+  }
+
   // Step down for magic or a team-up: the horse waits right behind you.
   function parkHorse(W, h) {
+    if (h.drag) dropDrag(W, h);
     h.horse = false;
     const it = spawnItem(W, 'horse', clamp(h.x - h.face * 0.7, viewL(W), viewR(W)), h.z, false);
     it.face = h.face;
@@ -866,7 +987,7 @@
       W.buddy = {
         id: W.nextId++, kind: 'buddy', who, slot: 1, def: W.R.HEROES[who],
         x: W.cam.x - W.halfW - 0.6, y: 0, z: clamp(h.z + 0.6, W.zMin, W.zMax), vx: 0, vy: 0, vz: 0, face: 1, r: 0.35, scale: 1,
-        hp: 1, maxHp: 1, state: 'bEnter', st: 0, move: null, combo: 0, comboT: 9, queued: false, wlv: 1,
+        hp: 1, maxHp: 1, state: 'bEnter', st: 0, move: null, combo: 0, comboT: 9, queued: false, wlv: 1, horse: !!h.horse, tramp: {},
         grab: null, bops: 0, bopT: -1, contact: 0, inv: 99, freeze: 0, flash: 0, wantTreat: 1, score: 0,
       };
       ev(W, 'buddy', { who, x: W.buddy.x, z: W.buddy.z });
@@ -874,6 +995,7 @@
       W.buddy.wantTreat++;
       if (W.buddy.state === 'bye' || W.buddy.state === 'leave') { W.buddy.state = 'bGive'; W.buddy.st = 0; }
       ev(W, 'buddyAgain', { who: W.buddy.who });
+      buddyRides(W, h);
     }
     return true;
   }
@@ -900,7 +1022,7 @@
       case 'bEnter': {
         // he gallops in on a little horse, then hops off
         const tx = Math.max(viewL(W) + 1, h.x - 1.6);
-        if (run(tx, h.z + (h.z > W.zMin + 1 ? -0.7 : 0.7), b.def.run * 1.3) || b.st > 2.5) { b.state = 'hello'; b.st = 0; b.face = 1; ev(W, 'buddyHop', { who: b.who, x: b.x, z: b.z }); }
+        if (run(tx, h.z + (h.z > W.zMin + 1 ? -0.7 : 0.7), b.def.run * 1.3) || b.st > 2.5) { b.state = 'hello'; b.st = 0; b.face = 1; if (!b.horse) ev(W, 'buddyHop', { who: b.who, x: b.x, z: b.z }); }
         break;
       }
       case 'hello':
@@ -1093,6 +1215,7 @@
   }
 
   function knockDown(W, f, dir, ko) {
+    if (f.drag) dropDrag(W, f);
     if (f.grab) {
       const g = f.grab;
       g.heldBy = null;
@@ -1279,7 +1402,7 @@
         h.score += 50;
         ev(W, 'eat', { who: h.who, kind: it.kind, x: it.x, z: it.z, heal });
       } else if (it.kind === 'horse') {
-        if (!h.horse && h.state !== 'attack' && !h.grab) mount(W, h, it);
+        if (!h.horse && h.state !== 'attack' && !h.grab && it.left !== h.id) mount(W, h, it);
       } else if (it.kind === 'up') {
         it.gone = true;
         if (h.wlv < R.WEAPON_LEVEL.max) h.wlv++;
@@ -1328,6 +1451,11 @@
         it.z = clamp(it.z + (dz / d) * sp, W.zMin, W.zMax);
         if (Math.abs(dx) > 0.05) it.face = sign(dx);
         continue;
+      }
+      // a horse you hopped off is yours to climb on again once you've stepped away from it
+      if (it.left) {
+        const o = W.heroes.find((x) => x.id === it.left);
+        if (!o || !activeHero(o) || Math.abs(o.x - it.x) > 1.4 || Math.abs(o.z - it.z) > 0.8) it.left = null;
       }
       // coins fly into the nearest hero's pocket by themselves
       if (isCoin(it) && it.t > 0.55 && W.phase !== 'celebrate' && W.phase !== 'done') {
@@ -1400,7 +1528,7 @@
         break;
       case 'held':
         e.vx = e.vz = 0;
-        if (!e.heldBy || e.heldBy.grab !== e) { e.heldBy = null; e.state = 'hurt'; e.st = 0; e.stun = 0.2; }
+        if (!e.heldBy || (e.heldBy.grab !== e && e.heldBy.drag !== e)) { e.heldBy = null; e.state = 'hurt'; e.st = 0; e.stun = 0.2; e.y = 0; }
         break;
       case 'down': fall(W, e); break;
       case 'lying':
@@ -1604,6 +1732,7 @@
     W.pending = [];
     for (const h of W.heroes) {
       if (h.grab) { h.grab.heldBy = null; h.grab = null; if (h.state === 'grab') idle(h); }
+      if (h.drag) dropDrag(W, h);
       if (h.ko) { h.ko = false; h.hp = Math.max(1, h.hp); if (h.state === 'dizzy') { h.state = 'getup'; h.st = 0; } }
     }
     ev(W, 'clear', { bonus: !!W.bonus });
@@ -1641,6 +1770,7 @@
           };
         }
         W.buddy.state = 'celebrate';
+        W.buddy.horse = false;
         W.buddy.st = 0;
         W.buddy.y = 0;
       }

@@ -692,6 +692,7 @@
         case 'runoff': Fx.floatUp(e.boss ? '🏳️' : '💦', e.x, 2.4, e.z, 0.6); sfx('runoff'); break;
         case 'poof': Fx.poof(e.x, 1.0 * (e.scale || 1), e.z, e.scale || 1); Fx.stars(e.x, 1.2, e.z, 6); sfx('poof'); break;
         case 'grab': sfx('grab'); break;
+        case 'scoop': Fx.pow(e.x, e.y, e.z, 'GOTCHA!', true); sfx('grab'); sfx('neigh'); break;
         case 'toss': Fx.pow(e.x, e.y, e.z, e.word, true); sfx('toss'); break;
         case 'swing': sfx('whoosh', e.big); break;
         case 'jump': sfx('jump'); break;
@@ -805,6 +806,7 @@
           popBud();
           break;
         case 'buddyHop': addRunaway(e.x, e.z, -1, true); break;
+        case 'buddyMount': toast(`${heroName(e.who)} RIDES TOO!`, 'save', '🐎'); sfx('neigh'); break;
         case 'buddyAgain': popBud(); sfx('click'); break;
         case 'treat': {
           const h = W.heroes[0];

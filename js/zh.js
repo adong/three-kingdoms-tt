@@ -84,6 +84,7 @@
     'SAVED!': '救啦！', 'POOF!': '噗！', 'BEEP!': '哔！', 'BOINK!': '啵嘤！', 'POKE!': '戳！', 'SWISH!': '唰！', 'FWIP!': '嗖！',
     'CLANG!': '当！', 'WHIRL!': '转转转！', 'CLIP-CLOP!': '嘚嘚！', 'ZAP!': '噼啪！', 'FWOOSH!': '呼啦！', 'THWIP!': '嗖嗖！',
     'SHING!': '锵！', 'WHOA!': '哇啊！', 'CRACK!': '咔嚓！', 'PERFECT!': '完美！', 'LEVEL UP!': '升级！',
+    'BUMP!': '颠一下！', 'GOTCHA!': '抓到啦！',
   };
   [STAGE, BOSS, BOSS_LINE, HERO, MAGIC, FOOD, STORY, TIP, BURST].forEach((d) => L.add(d));
 
@@ -129,7 +130,8 @@
     'Player 1': '1 号玩家', 'Player 2': '2 号玩家', 'swing your weapon': '挥武器', 'jump (jump + swing = flying kick)': '跳（跳 + 挥 = 飞踢）',
     'magic (uses a 🔮)': '法术（用一个 🔮）', 'rescue spin (costs a heart)': '救命旋风（用一颗心）',
     'walk into a soldier to grab him, swing to toss him': '走到士兵身上抓住他，再挥武器把他扔出去',
-    'call a horse (walk to it to ride, jump to hop off)': '叫一匹马（走过去就能骑，跳一下就下马）', 'call your brother · team-up': '叫兄弟 · 合体必杀',
+    'call a horse (walk to it to ride, jump to hop off)': '叫一匹马（走过去就能骑，跳一下就下马）',
+    'on a horse: swing next to a soldier to scoop him up, swing again to fling him': '骑马时：贴着士兵挥武器就能把他拎起来，再挥一下把他甩出去', 'call your brother · team-up': '叫兄弟 · 合体必杀',
     'In 1 player both sets of keys work, and Space jumps. With no 🔮 left, magic does the rescue spin.': '1 个人玩时两组按键都能用，空格键也能跳。没有 🔮 了，法术键会放救命旋风。',
     "Joystick, ⚔️ SWING, ⬆️ JUMP, ✨ MAGIC and 🐎 HORSE. Tap your brother's face to call him.": '摇杆、⚔️ 挥、⬆️ 跳、✨ 法术和 🐎 叫马。点兄弟的头像叫他来帮忙。',
   });
@@ -145,6 +147,7 @@
   L.rule(/^(\w+) IS HERE! 🐎$/, (m, w) => `${name(w)} 骑马来啦！🐎`);
   L.rule(/^(\w+) SAVED YOU! 🛡️$/, (m, w) => `${name(w)} 救了你！🛡️`);
   L.rule(/^(\w+) IS BACK! 💪$/, (m, w) => `${name(w)} 回来啦！💪`);
+  L.rule(/^(\w+) RIDES TOO!$/, (m, w) => `${name(w)} 也骑上马啦！`);
   L.rule(/^(\w+) IS OUT!$/, (m, w) => `${name(w)} 出局了！`);
   L.rule(/^BYE! (.+)$/, '拜拜！$1');
   L.rule(/^(.+) FROM (\w+)!$/, (m, item, w) => `${name(w)} 送来的${tr(FOOD, item)}！`);

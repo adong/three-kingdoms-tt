@@ -53,6 +53,10 @@
     bop:      { len: 0.24, at: 0.08, until: 0.12, dmg: 5, word: 'BOP!' },           // bop while holding someone
     toss:     { len: 0.42, dmg: 12, hitOthers: 10, speed: 8, word: 'WHEE!' },        // throwing someone you're holding
     trample:  { dmg: 8, word: 'CLIP-CLOP!' },                                         // running into them on a horse
+    // on a horse, swing right next to a soldier: scoop him up and he dangles beside the horse. Every `every` s of
+    // galloping is a BUMP! (dmg); anyone he's swung into gets bowled over (hitOthers). Swing again, or after `max` s,
+    // to fling him (fling damage, speed). reach/depth: how close he has to be to scoop him.
+    drag:     { reach: 1.4, depth: 0.6, every: 0.35, dmg: 6, hitOthers: 10, fling: 12, speed: 9, max: 3.0, word: 'BUMP!' },
   };
 
   // Chests hold a weapon upgrade: level 1 wood, 2 silver, 3 gold. Each level hits harder and a little further.
